@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@jetlinks-web-core/*": [
+        "../../../sass平台/cloud.jetlinks/runtime-ui/jetlinks-web-core/src/*"
+      ],
+      "@/*": ["../../../sass平台/cloud.jetlinks/runtime-ui/jetlinks-web-core/src/*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.vue",
+    "../../../sass平台/cloud.jetlinks/runtime-ui/jetlinks-web-core/src/auto-imports.d.ts",
+    "../../../sass平台/cloud.jetlinks/runtime-ui/jetlinks-web-core/src/env.d.ts"
+  ]
+}
