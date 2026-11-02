@@ -30,6 +30,8 @@
         "url": "/park/patrol/categories",
         "showPage": ["patrol-category"],
         "assetType": "patrolCategory",
+        "accessSupport": "support",
+        "assetTypes": ["patrolCategory"],
         "sortIndex": 1,
         "permissions": [
           {
@@ -64,6 +66,8 @@
         "url": "/park/patrol/points",
         "showPage": ["patrol-point"],
         "assetType": "patrolPoint",
+        "accessSupport": "support",
+        "assetTypes": ["patrolPoint"],
         "sortIndex": 2,
         "permissions": [
           {
@@ -98,6 +102,8 @@
         "url": "/park/patrol/standards",
         "showPage": ["patrol-standard"],
         "assetType": "patrolStandard",
+        "accessSupport": "support",
+        "assetTypes": ["patrolStandard"],
         "sortIndex": 3,
         "permissions": [
           {
@@ -132,6 +138,8 @@
         "url": "/park/patrol/posts",
         "showPage": ["patrol-post"],
         "assetType": "patrolPost",
+        "accessSupport": "support",
+        "assetTypes": ["patrolPost", "user"],
         "sortIndex": 4,
         "permissions": [
           {
@@ -166,6 +174,8 @@
         "url": "/park/patrol/rosters",
         "showPage": ["patrol-roster"],
         "assetType": "patrolRoster",
+        "accessSupport": "support",
+        "assetTypes": ["patrolRoster"],
         "sortIndex": 5,
         "permissions": [
           {
@@ -200,6 +210,8 @@
         "url": "/park/patrol/plans",
         "showPage": ["patrol-plan"],
         "assetType": "patrolPlan",
+        "accessSupport": "support",
+        "assetTypes": ["patrolPlan"],
         "sortIndex": 6,
         "permissions": [
           {
@@ -234,6 +246,8 @@
         "url": "/park/patrol/tasks",
         "showPage": ["patrol-task"],
         "assetType": "patrolPlan",
+        "accessSupport": "support",
+        "assetTypes": ["patrolPlan"],
         "sortIndex": 7,
         "permissions": [
           {
@@ -268,6 +282,8 @@
         "url": "/park/patrol/records",
         "showPage": ["patrol-execution"],
         "assetType": "patrolPlan",
+        "accessSupport": "support",
+        "assetTypes": ["patrolPlan"],
         "sortIndex": 8,
         "permissions": [
           {
@@ -291,6 +307,8 @@
         "url": "/park/patrol/reports",
         "showPage": ["patrol-report"],
         "assetType": "patrolPlan",
+        "accessSupport": "support",
+        "assetTypes": ["patrolPlan"],
         "sortIndex": 9,
         "permissions": [
           {

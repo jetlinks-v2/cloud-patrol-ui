@@ -37,7 +37,7 @@ pnpm exec vue-tsc -p modules/cloud-patrol-ui/tsconfig.json --noEmit
 node --test modules/cloud-patrol-ui/tests/*.test.mjs
 ```
 
-`baseMenu` 的根及叶子均为 `owner: app`，`options.appName` 为 `cloud-patrol`。按菜单管理流程增量导入，不全量初始化覆盖其他业务菜单。模板及项目应用创建步骤见后端 `deploy/authentication-patrol-application.yml` 和 README。源码菜单不是自动授权，已持久化的菜单或模板也不会只因改源码自动更新。
+`baseMenu` 的根及叶子均为 `owner: app`，`options.appName` 为 `cloud-patrol`。业务页面显式声明 `accessSupport: support` 和 `assetTypes`，岗位菜单同时声明 `patrolPost` / `user`，使模板编辑器能够配置人员查询的数据范围；六类配置使用 `SELECT_AND_BIND`，人员使用 `SELECT`。按菜单管理流程增量导入，不全量初始化覆盖其他业务菜单。模板及项目应用创建步骤见后端 `deploy/authentication-patrol-application.yml` 和 README。源码菜单不是自动授权，已持久化的菜单或模板也不会只因改源码自动更新。
 
 必须从 SaaS 项目的巡更应用入口进入。宿主负责身份、项目、网关地址和 `X-Asset-Scope`；不要把应用 ID 当项目 ID，也不要另外加自签 token。`patrol-task:generate` 按钮权限和关联计划的资产 save 权限必须同时存在。
 

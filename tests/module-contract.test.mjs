@@ -73,3 +73,16 @@ test('Chinese and English dictionaries have identical keys and cover literal UI 
       assert(keys(zh).includes(key), key)
   }
 })
+
+test('menu grants expose every template asset, including the person directory user scope', () => {
+  const grantable = new Set()
+  for (const item of menu.children) {
+    assert.equal(item.accessSupport, 'support', `${item.id} must expose data permissions`)
+    assert(item.assetTypes.includes(item.assetType))
+    for (const assetType of item.assetTypes) grantable.add(assetType)
+  }
+  assert.deepEqual(menu.children.find(item => item.id === 'patrol-posts').assetTypes, ['patrolPost', 'user'])
+  for (const [, assetType] of template.matchAll(/asset-type: (\w+)/g)) {
+    assert(grantable.has(assetType), `Template asset ${assetType} is unavailable in menu grant editor`)
+  }
+})
