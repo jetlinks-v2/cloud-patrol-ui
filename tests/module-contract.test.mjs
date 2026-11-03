@@ -6,14 +6,18 @@ import { pathToFileURL } from 'node:url'
 const root = new URL('../', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
 const menu = JSON.parse(read('baseMenu.json'))[0]
-// 支持相邻仓库和 SaaS 的嵌套子模块布局；未检出后端时明确失败，不跳过契约检查。
+// 只读取物业仓库中的巡更源码，避免旧独立仓库掩盖迁移后的契约变化。
 const backend = process.env.PATROL_BACKEND_ROOT
   ? pathToFileURL(resolve(process.env.PATROL_BACKEND_ROOT) + sep)
-  : [new URL('../cloud-patrol/', root), new URL('../../../modules/cloud-patrol/', root)]
-      .find((candidate) => existsSync(new URL('pom.xml', candidate)))
-assert(backend, 'Clone cloud-patrol beside this repository or set PATROL_BACKEND_ROOT')
+  : [
+      new URL('../property-management/', root),
+      new URL('../../property-management/', root),
+      new URL('../../../modules/property-management/', root),
+    ]
+      .find((candidate) => existsSync(new URL('modules/property-patrol/property-patrol-manager/pom.xml', candidate)))
+assert(backend, 'Check out property-management or set PATROL_BACKEND_ROOT to its repository root')
 const template = readFileSync(
-  new URL('deploy/authentication-patrol-application.yml', backend),
+  new URL('deploy/patrol/authentication-patrol-application.yml', backend),
   'utf8'
 )
 function keys(value, prefix = '') {
@@ -48,7 +52,7 @@ test('menu, actual page, backend resource, application template and asset types 
           }[page]
     const java = readFileSync(
       new URL(
-        `cloud-patrol-manager/src/main/java/org/jetlinks/pro/patrol/web/Patrol${controller}Controller.java`,
+        `modules/property-patrol/property-patrol-manager/src/main/java/org/jetlinks/pro/patrol/web/Patrol${controller}Controller.java`,
         backend
       ),
       'utf8'

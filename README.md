@@ -57,4 +57,4 @@ node node_modules/vue-tsc/bin/vue-tsc.js --noEmit -p tsconfig.workspace.json
 
 测试约束包含菜单/页面/后端权限/模板的契约对齐、双语 key、Vue 代理编辑副本、枚举值、任务时窗及业务时区。真实接入还必须检查分页筛选、候选人员、编辑清空字段、只读角色、生成后刷新、快照详情、跨项目/应用拒绝及失败重试。
 
-跨仓契约测试需要真实后端源码：支持相邻的 `cloud-patrol`，或 SaaS 聚合布局中的 `cloud.jetlinks/modules/cloud-patrol`；其他布局可用 `PATROL_BACKEND_ROOT=/absolute/path/to/cloud-patrol` 指定。未检出后端会明确失败，不用复制接口快照或跳过断言掩盖缺失依赖。
+跨仓契约测试读取 `property-management/modules/property-patrol` 中的真实后端源码。支持 SaaS 聚合布局 `cloud.jetlinks/modules/property-management` 和本地 `项目/property-management`；其他布局设置 `PATROL_BACKEND_ROOT=/absolute/path/to/property-management`（指向物业仓库根目录）。不再读取旧独立巡更后端仓库。未检出后端会明确失败，不用复制接口快照或跳过断言掩盖缺失依赖。
