@@ -3,9 +3,12 @@ import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { savePermission, resources } from '../model/resources.ts'
 const root = new URL('../', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
 const menu = JSON.parse(read('baseMenu.json'))[0]
+const flatten = nodes => nodes.flatMap(node => node.children?.length ? flatten(node.children) : [node])
+const pages = flatten(menu.children)
 // 只读取物业仓库中的巡更源码，避免旧独立仓库掩盖迁移后的契约变化。
 const backend = process.env.PATROL_BACKEND_ROOT
   ? pathToFileURL(resolve(process.env.PATROL_BACKEND_ROOT) + sep)
@@ -25,10 +28,27 @@ function keys(value, prefix = '') {
     typeof item === 'object' ? keys(item, prefix + key + '.') : [prefix + key]
   )
 }
+test('page button permission expressions resolve to declared menu codes and button IDs', () => {
+  const allowed = new Set(pages.flatMap(item =>
+    (item.buttons || []).map(button => `${item.code}:${button.id}`)
+  ))
+  const cases = [
+    ...resources.map(resource => ({ file: 'components/ConfigurationPage.vue', resource })),
+  ]
+  let checked = 0
+  for (const { file, resource } of cases) {
+    for (const [, expression] of read(file).matchAll(/:has-permission="([^"]+)"/g)) {
+      const code = new Function('resource', 'savePermission', `return (${expression})`)(resource, savePermission)
+      assert(allowed.has(code), `${file} (${resource || 'tasks'}): ${code} is not a declared menu button`)
+      checked++
+    }
+  }
+  assert.equal(checked, resources.length * 2)
+})
 test('menu, actual page, backend resource, application template and asset types align', () => {
-  assert.equal(menu.children.length, 9)
+  assert.equal(pages.length, 11)
   const seen = new Set()
-  for (const item of menu.children) {
+  for (const item of pages) {
     assert(!seen.has(item.id))
     seen.add(item.id)
     assert.equal(item.owner, 'app')
@@ -41,6 +61,13 @@ test('menu, actual page, backend resource, application template and asset types 
       page === 'records'
         ? 'Execution'
         : {
+            levels: 'Level',
+            tags: 'Tag',
+            warnings: 'Warning',
+            calendar: 'Calendar',
+            coverage: 'Statistics',
+            qualification: 'Statistics',
+            personnel: 'Statistics',
             categories: 'Category',
             points: 'Point',
             standards: 'Standard',
@@ -66,12 +93,20 @@ test('Chinese and English dictionaries have identical keys and cover literal UI 
     en = JSON.parse(read('locales/lang/en.json'))
   assert.deepEqual(keys(zh).sort(), keys(en).sort())
   for (const file of [
+    'components/TaskGroupDetails.vue',
+    'components/ExecutionHistory.vue',
+    'components/CalendarDayDetails.vue',
+    'components/StatisticsPage.vue',
+    'views/patrol/calendar/index.vue',
     'components/ConfigEditor.vue',
     'components/RuleEditor.vue',
     'components/StandardEditor.vue',
-    'views/patrol/tasks/index.vue',
+    'components/StandardItemEditor.vue',
+    'components/PatrolImage.vue',
+    'components/InspectionResults.vue',
     'views/patrol/records/index.vue',
-    'views/patrol/reports/index.vue',
+    'views/patrol/points/index.vue',
+    'components/RosterImport.vue',
   ]) {
     for (const [, key] of read(file).matchAll(/(?:t\(|'|")(Patrol\.[A-Za-z0-9.]+)(?:'|")/g))
       assert(keys(zh).includes(key), key)
@@ -80,13 +115,41 @@ test('Chinese and English dictionaries have identical keys and cover literal UI 
 
 test('menu grants expose every template asset, including the person directory user scope', () => {
   const grantable = new Set()
-  for (const item of menu.children) {
+  for (const item of pages) {
     assert.equal(item.accessSupport, 'support', `${item.id} must expose data permissions`)
     assert(item.assetTypes.includes(item.assetType))
     for (const assetType of item.assetTypes) grantable.add(assetType)
   }
-  assert.deepEqual(menu.children.find(item => item.id === 'patrol-posts').assetTypes, ['patrolPost', 'user'])
+  assert(pages.find(item => item.id === 'patrol-points').assetTypes.includes('user'))
   for (const [, assetType] of template.matchAll(/asset-type: (\w+)/g)) {
     assert(grantable.has(assetType), `Template asset ${assetType} is unavailable in menu grant editor`)
   }
+})
+
+ test('point operations replace extra navigation while calendar and original statistics remain', () => {
+  const ids = new Set(pages.map(page => page.id))
+  for (const id of ['patrol-posts', 'patrol-rosters', 'patrol-plans', 'patrol-tasks', 'patrol-reports']) {
+    assert(!ids.has(id)); assert(!template.includes(`- id: ${id}\n`))
+  }
+  const point = pages.find(page => page.id === 'patrol-points')
+  for (const id of ['posts', 'assign', 'importRoster']) {
+    assert(point.buttons.some(button => button.id === id))
+    assert(template.includes(`{id: ${id}, granted: true}`))
+    assert(read('views/patrol/points/index.vue').includes(`patrol/points:${id}`))
+  }
+  assert(menu.children.find(node => node.id === 'patrol-point-management').children.some(node => node.id === 'patrol-calendar'))
+ })
+
+test('mobile execution grants are explicit and do not turn record queries into general writes', () => {
+  const records = pages.find(page => page.id === 'patrol-records')
+  assert(records.assetTypes.includes('user'))
+  const mobile = records.buttons.find(button => button.id === 'mobile')
+  assert.deepEqual(mobile.permissions, [
+    { permission: 'patrol-task', actions: ['query'] },
+    { permission: 'patrol-execution', actions: ['submit'] },
+    { permission: 'patrol-attachment', actions: ['save'] },
+    { permission: 'patrol-category', actions: ['query'] },
+  ])
+  assert(!records.permissions.some(permission => permission.actions.includes('submit')))
+  assert(template.includes('{id: mobile, granted: true}'))
 })

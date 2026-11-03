@@ -1,19 +1,23 @@
-# Cloud Patrol UI · 巡更 PC 管理端
+# Cloud Patrol UI · 巡更 PC 与 H5
 
-Vue3/TypeScript 的 JetLinks **runtime-ui 应用模块**，不是单独登录的后台。复用宿主请求、应用上下文、ConditionFilter、ProTable 和权限按钮，不注册第二个路由器或 Axios 客户端。后端在相邻 `cloud-patrol` 仓库。
+手机端源码、构建、登录上下文和授权接入见 [mobile/README.md](mobile/README.md)。H5 与 PC 共用本仓库和巡更后端；以下内容主要描述 PC 宿主模块。
+
+Vue3/TypeScript 的 JetLinks **runtime-ui 应用模块**，不是单独登录的后台。复用宿主请求、应用上下文、ConditionFilter、ProTable 和权限按钮，不注册第二个路由器或 Axios 客户端。后端在 `项目/property-management/modules/property-patrol`，由 `services/property-patrol-service` 独立启动。
 
 ## 页面与交互
 
-- 分类、点位、检查标准、岗位人员、排班、巡更计划：条件查询、分页、只读详情和独立编辑副本；配置停用代替物理删除。
-- 标准：可视化维护检查项、必填和候选结果，历史任务保留标准快照。
+- 基础管理包含点位等级、巡更标准、分类和异常预警配置；配置停用代替物理删除。
+- 点位管理提供岗位成员维护、逐点位的岗位/等级/标准指派及月排班模板下载、导入。内部计划不设独立菜单，编辑保留指派 ID。
+- 排班日历位于巡更点管理下，为只读月/日看板，支持日期明细导出，按原系统的任务结束日期展示。
+- 标准：维护数值/文本/选项/图像四类检查项，支持精确上下限、合格选项、参考说明、必填、必需图片和例图上传/替换/预览；上传未完成时不能保存。历史任务保留标准快照。
 - 规则：七天时段、指定日期覆盖、周期/次数及冷却配置，不用 JSON 输入框代替规则编辑器。日期覆盖为空表示休巡，删除覆盖后恢复星期规则。
-- 任务：按计划和业务日期预览/手动生成，展示岗位、时窗、已巡/应巡和随时钟更新的状态。
-- 执行记录：条件查询与检查结果快照详情，不提供管理端任意修改执行事实的入口。
-- 完成统计：显式日期范围刷新，查询真实应巡/已巡、达标时段与逾期缺巡次数，不以零值或旧范围结果冒充加载成功。
+- 任务每天 00:01 由后台生成；巡更记录按稳定任务组分页，详情展示真实时段和执行记录。
+- 执行记录：条件查询、整体及逐题判定、参考范围与答案快照、例图和提交图片的受控预览，不提供管理端任意修改执行事实的入口。
+- 巡更统计保留点位覆盖率、点位合格率、人员巡更覆盖率；撤下额外的完成统计菜单。标签由巡更内部维护。
 
 资源选择器使用远程搜索、已选项回显、防抖和过期响应丢弃。表格加载/空态由宿主负责，动作失败保留输入。业务时间显示采用 UTC+08:00，与后端 Asia/Shanghai 一致。
 
-**不包含小程序或 PC 模拟打卡界面。** 也不包含集团模板、标签、批量导入导出、二维码图片、地图、排班日历、附件、离线补传、漏检申报审批、预警配置、人员评价或集团报表。不要将这九个管理页面视为旧系统全功能等价替换。业务契约和接口见后端 README。
+**不包含小程序或 PC 模拟打卡界面。** 也不包含集团模板、点位批量导入导出、二维码图片、地图、APP 现场拍摄采集、离线补传、漏检申报审批、预警通知、人员评价或集团报表。不要将当前管理页面视为旧系统全功能等价替换。业务契约和接口见后端 README。文本/图片及未配置合格规则的题目保持未判定，旧记录不回算；完成次数不等于合格次数。
 
 ## 目录
 
@@ -21,7 +25,7 @@ Vue3/TypeScript 的 JetLinks **runtime-ui 应用模块**，不是单独登录的
 - `model/`：资源权限映射、编辑副本、枚举提交值、时间和状态规则。
 - `composables/`：请求与页面状态编排。
 - `components/`：配置编辑、标准/频次编辑、远程选择器等复用组件。
-- `views/patrol/`：九个业务页面。
+- `views/patrol/`：11 个业务页面。
 - `index.ts`、`baseMenu.ts/json`、`locales/lang/`：宿主模块、菜单与双语注册入口。
 
 ## 接入 runtime-ui
@@ -37,9 +41,11 @@ pnpm exec vue-tsc -p modules/cloud-patrol-ui/tsconfig.json --noEmit
 node --test modules/cloud-patrol-ui/tests/*.test.mjs
 ```
 
-`baseMenu` 的根及叶子均为 `owner: app`，`options.appName` 为 `cloud-patrol`。业务页面显式声明 `accessSupport: support` 和 `assetTypes`，岗位菜单同时声明 `patrolPost` / `user`，使模板编辑器能够配置人员查询的数据范围；六类配置使用 `SELECT_AND_BIND`，人员使用 `SELECT`。按菜单管理流程增量导入，不全量初始化覆盖其他业务菜单。模板及项目应用创建步骤见后端 `deploy/authentication-patrol-application.yml` 和 README。源码菜单不是自动授权，已持久化的菜单或模板也不会只因改源码自动更新。
+`baseMenu` 的根及叶子均为 `owner: app`，`options.appName` 为 `cloud-patrol`。业务页面显式声明 `accessSupport: support` 和 `assetTypes`，点位菜单同时声明岗位、计划、排班、等级、标准及 `user`，使模板编辑器能够配置人员查询的数据范围；配置资产使用 `SELECT_AND_BIND`，人员使用 `SELECT`。按菜单管理流程增量导入，不全量初始化覆盖其他业务菜单。模板及项目应用创建步骤见后端 `deploy/patrol/authentication-patrol-application.yml` 和 README。源码菜单不是自动授权，已持久化的菜单或模板也不会只因改源码自动更新。
 
-必须从 SaaS 项目的巡更应用入口进入。宿主负责身份、项目、网关地址和 `X-Asset-Scope`；不要把应用 ID 当项目 ID，也不要另外加自签 token。`patrol-task:generate` 按钮权限和关联计划的资产 save 权限必须同时存在。
+图片通过巡更附件 API 复用平台文件服务，只保存业务附件 ID；每题最多一张，支持 JPEG/PNG/WebP、最大5MB，错误时保留原附件以便重试。标准/记录菜单声明 `patrolAttachment` 与 `patrol-attachment:query`，标准保存动作另含 `patrol-attachment:save`；CloudPatrol 模板同步新增附件资产 `SELECT_AND_BIND`。已存在环境须增量更新菜单、模板、订阅和应用授权，重启不会自动补齐。PC 上传不能证明现场拍摄，APP 相机/水印和真机验收仍属后续范围。
+
+必须从 SaaS 项目的巡更应用入口进入。宿主负责身份、项目、网关地址和 `X-Asset-Scope`；不要把应用 ID 当项目 ID，也不要另外加自签 token。点位操作按钮 `patrol/points:posts`、`:assign`、`:importRoster` 分别映射岗位、计划、排班的 save；资产权限继续独立控制。月导入使用稳定人员/岗位 ID，替换当前应用整月排班前要求显式确认；旧手机号模板需重新填写。
 
 ## 当前多仓工作目录下的开发
 
@@ -53,8 +59,12 @@ node node_modules/vite/bin/vite.js build
 node node_modules/vue-tsc/bin/vue-tsc.js --noEmit -p tsconfig.workspace.json
 ```
 
-独立 Vite 命令只检查模块编译及产物生成，宿主依赖外置；不能据此宣称宿主完整打包、浏览器交互、真实网关和权限联调已经通过。全量类型检查会同时检查导入的宿主源码，必须区分诊断归属，但不能忽略这些错误并宣称全量通过。
+独立 Vite 命令只检查模块编译及产物生成，宿主依赖外置；不能据此宣称宿主完整打包、浏览器交互、真实网关和权限联调已经通过。全量类型检查会同时检查导入的宿主源码，必须区分诊断归属，但不能忽略这些错误并宣称全量通过。模块 `tsconfig.json` 将 Vue 类型解析到宿主 `node_modules/vue`，避免子模块的独立依赖副本导致模板 ref 类型身份不一致；多仓开发使用 `tsconfig.workspace.json` 中对应的宿主路径。此设置只约束类型解析，实际发布仍使用宿主构建与依赖版本。
 
 测试约束包含菜单/页面/后端权限/模板的契约对齐、双语 key、Vue 代理编辑副本、枚举值、任务时窗及业务时区。真实接入还必须检查分页筛选、候选人员、编辑清空字段、只读角色、生成后刷新、快照详情、跨项目/应用拒绝及失败重试。
 
 跨仓契约测试读取 `property-management/modules/property-patrol` 中的真实后端源码。支持 SaaS 聚合布局 `cloud.jetlinks/modules/property-management` 和本地 `项目/property-management`；其他布局设置 `PATROL_BACKEND_ROOT=/absolute/path/to/property-management`（指向物业仓库根目录）。不再读取旧独立巡更后端仓库。未检出后端会明确失败，不用复制接口快照或跳过断言掩盖缺失依赖。
+
+## 物业共享开发分支
+
+物业组共享分支为 `property/2.20-dev`；巡更变更提交范围使用 `物业-巡更`。提交并推送本仓库后，在 `saas-runtime-ui` 更新 `modules/cloud-patrol-ui` 的子模块提交，再在 `cloud.jetlinks` 更新 `runtime-ui`。同事按聚合仓库记录的提交递归更新，不使用 `--remote` 将全体子模块更新到不配套版本。当前仍为开发版本，旧巡更的时段生成口径、逐时段冷却和部分管理操作尚待对齐，不作为旧系统全功能验收版本。

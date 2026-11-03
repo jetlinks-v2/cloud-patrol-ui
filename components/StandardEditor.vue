@@ -1,74 +1,42 @@
 <template>
   <a-space direction="vertical" style="width: 100%">
-    <a-card v-for="(item, index) in modelValue" :key="item.id" size="small">
-      <a-space direction="vertical" style="width: 100%">
-        <a-input
-          :value="item.title"
-          :placeholder="t('Patrol.itemTitle')"
-          :maxlength="128"
-          @update:value="patch(index, { title: $event })"
-        />
-        <a-select
-          :value="item.options"
-          mode="tags"
-          style="width: 100%"
-          :placeholder="t('Patrol.itemOptions')"
-          @update:value="setOptions(index, $event)"
-        />
-        <a-space
-          ><a-checkbox
-            :checked="item.required"
-            @update:checked="patch(index, { required: $event })"
-            >{{ t('Patrol.required') }}</a-checkbox
-          >
-          <a-button
-            danger
-            type="link"
-            @click="
-              emit(
-                'update:modelValue',
-                modelValue.filter((_, i) => i !== index)
-              )
-            "
-            >{{ t('Patrol.remove') }}</a-button
-          ></a-space
-        >
-      </a-space>
+    <a-empty v-if="!modelValue.length" :description="t('Patrol.standardItemsRequired')" />
+    <a-card v-for="(item, index) in modelValue" :key="item.id" :title="`${index + 1}. ${item.title || t('Patrol.itemTitle')}`" size="small">
+      <template v-if="!readonly" #extra>
+        <a-space>
+          <a-button size="small" :disabled="index === 0" @click="move(index, -1)">{{ t('Patrol.moveUp') }}</a-button>
+          <a-button size="small" :disabled="index === modelValue.length - 1" @click="move(index, 1)">{{ t('Patrol.moveDown') }}</a-button>
+          <a-button danger type="link" @click="remove(index)">{{ t('Patrol.remove') }}</a-button>
+        </a-space>
+      </template>
+      <StandardItemEditor :item="item" :readonly="readonly" @change="patch(index, $event)" @busy-change="setBusy(item.id, $event)" />
     </a-card>
-    <a-button :disabled="modelValue.length >= 100" @click="add">{{ t('Patrol.addItem') }}</a-button>
+    <a-button v-if="!readonly" :disabled="modelValue.length >= 100" @click="add">{{ t('Patrol.addItem') }}</a-button>
   </a-space>
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import {
-  Space as ASpace,
-  Card as ACard,
-  Input as AInput,
-  Select as ASelect,
-  Checkbox as ACheckbox,
-  Button as AButton,
-} from 'ant-design-vue'
+import { Space as ASpace, Card as ACard, Button as AButton, Empty as AEmpty } from 'ant-design-vue'
+import StandardItemEditor from './StandardItemEditor.vue'
 import type { CheckItem } from '../api/types'
-const props = defineProps<{ modelValue: CheckItem[] }>()
-const emit = defineEmits<{ 'update:modelValue': [items: CheckItem[]] }>()
+const props = defineProps<{ modelValue: CheckItem[]; readonly?: boolean }>()
+const emit = defineEmits<{ 'update:modelValue': [items: CheckItem[]]; busyChange: [busy: boolean] }>()
 const { t } = useI18n()
-const patch = (index: number, value: Partial<CheckItem>) =>
-  emit(
-    'update:modelValue',
-    props.modelValue.map((item, i) => (i === index ? { ...item, ...value } : item))
-  )
-const setOptions = (index: number, value: unknown) => {
-  if (Array.isArray(value))
-    patch(index, { options: value.filter((item): item is string => typeof item === 'string') })
+const pending = new Set<string>()
+function setBusy(id: string, busy: boolean) {
+  if (busy) pending.add(id)
+  else pending.delete(id)
+  emit('busyChange', pending.size > 0)
 }
-const add = () =>
-  emit('update:modelValue', [
-    ...props.modelValue,
-    {
-      id: crypto.randomUUID(),
-      title: '',
-      required: true,
-      options: [t('Patrol.normal'), t('Patrol.abnormal')],
-    },
-  ])
+const patch = (index: number, value: CheckItem) => emit('update:modelValue', props.modelValue.map((item, i) => i === index ? value : item))
+const remove = (index: number) => emit('update:modelValue', props.modelValue.filter((_, i) => i !== index))
+function move(index: number, direction: number) {
+  const items = [...props.modelValue], target = index + direction
+  ;[items[index], items[target]] = [items[target], items[index]]
+  emit('update:modelValue', items)
+}
+const add = () => emit('update:modelValue', [...props.modelValue, {
+  id: crypto.randomUUID(), title: '', type: 'choice', required: true,
+  options: [t('Patrol.normal'), t('Patrol.abnormal')], qualifiedOptions: [], photoRequired: false,
+}])
 </script>

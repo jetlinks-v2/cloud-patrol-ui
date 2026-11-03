@@ -5,7 +5,7 @@ import { queryConfig, saveConfig } from '../api/patrol'
 import { draftOf } from '../model/resources'
 import type { ConfigEntity, Resource, Query, Term } from '../api/types'
 /** 页面编排只维护编辑副本和筛选；列表分页、loading、空态由宿主 ProTable 负责。 */
-export function useConfiguration(resource: Resource) {
+export function useConfiguration(resource: Resource, point?: ConfigEntity) {
   const { t } = useI18n()
   const saveFailed = ref(false)
   const visible = ref(false),
@@ -13,10 +13,14 @@ export function useConfiguration(resource: Resource) {
     version = ref(0)
   const draft = shallowRef<ConfigEntity>(draftOf(resource))
   const terms = ref<Term[]>([])
-  const params = computed(() => ({ terms: terms.value, _refresh: version.value }))
+  const params = computed(() => ({ terms: [...terms.value, ...(point?.id ? [{ column: 'pointId', termType: 'eq', value: point.id }] : [])], _refresh: version.value }))
   const load = (query: Query) => queryConfig(resource, query)
   const edit = (source?: ConfigEntity) => {
     draft.value = draftOf(resource, source)
+    if (point?.id) {
+      draft.value.pointId = point.id
+      if (!source) draft.value.name = point.name
+    }
     visible.value = true
   }
   async function save(value: ConfigEntity) {

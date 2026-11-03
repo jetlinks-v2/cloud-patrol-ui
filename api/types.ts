@@ -1,4 +1,4 @@
-export type Resource = 'categories' | 'points' | 'standards' | 'posts' | 'rosters' | 'plans'
+export type Resource = 'categories' | 'points' | 'standards' | 'posts' | 'rosters' | 'plans' | 'levels' | 'tags' | 'warnings'
 export interface EnumValue<T extends string = string> {
   value: T
   text: string
@@ -20,15 +20,36 @@ export interface CheckItem {
   title: string
   required: boolean
   options: string[]
+  type?: ItemType | EnumValue<ItemType> | null
+  lowerLimit?: string | number | null
+  upperLimit?: string | number | null
+  referenceText?: string
+  qualifiedOptions?: string[]
+  photoRequired?: boolean
+  exampleFileId?: string | null
 }
+export type ItemType = 'number' | 'text' | 'choice' | 'image'
+export type CheckResult = 'pass' | 'fail' | 'not_evaluated'
+export interface AttachmentReceipt { id: string; name: string; mediaType: string; length: number }
 export interface ConfigEntity {
   id?: string
   name: string
   enabled: boolean
   description?: string
+  createTime?: number
+  modifyTime?: number
   parentId?: string
   code?: string
   categoryId?: string
+  tagIds?: string[]
+  levelId?: string
+  shiftName?: string
+  userName?: string
+  rest?: boolean
+  triggerParentCode?: string
+  triggerChildCode?: string
+  warningCode?: string
+  colorHex?: string
   location?: string
   nfcCode?: string
   items?: CheckItem[]
@@ -45,7 +66,25 @@ export interface ConfigEntity {
   rosterPolicy?: RosterPolicy | EnumValue<RosterPolicy>
   rule?: PatrolRule
 }
+export interface TaskGroup {
+  id: string
+  planId: string
+  name: string
+  pointId: string
+  pointName: string
+  postName: string
+  belongDate: string
+  ruleVersion: string
+  periodCount: number
+  requiredCount: number
+  startTime: number
+  endTime: number
+}
 export interface Task {
+  taskGroupId?: string
+  belongDate?: string
+  periodNo?: number
+  ruleVersion?: string
   id: string
   name: string
   planId: string
@@ -57,13 +96,21 @@ export interface Task {
   endTime: number
   requiredCount: number
   completedCount: number
+  lastExecutionTime?: number
+  levelName?: string
+  categoryId?: string
   standardSnapshot: CheckItem[]
 }
 export interface Answer {
   itemId: string
-  value: string
+  value?: string | null
+  attachmentId?: string | null
 }
 export interface Execution {
+  taskGroupId?: string
+  belongDate?: string
+  periodNo?: number
+  ruleVersion?: string
   id: string
   taskId: string
   planId: string
@@ -73,6 +120,8 @@ export interface Execution {
   remark?: string
   answers: Answer[]
   standardSnapshot: CheckItem[]
+  result?: CheckResult | EnumValue<CheckResult> | null
+  itemResults?: { itemId: string; result: CheckResult | EnumValue<CheckResult> }[]
 }
 export interface Person {
   id: string

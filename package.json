@@ -9,7 +9,10 @@
     "build": "vite build",
     "typecheck": "vue-tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
-    "typecheck:workspace": "vue-tsc --noEmit -p tsconfig.workspace.json"
+    "typecheck:workspace": "vue-tsc --noEmit -p tsconfig.workspace.json",
+    "dev:mobile": "vite --config vite.mobile.config.ts",
+    "build:mobile": "vite build --config vite.mobile.config.ts",
+    "typecheck:mobile": "vue-tsc --noEmit -p tsconfig.mobile.json"
   },
   "peerDependencies": {
     "vue": "^3.3.4",

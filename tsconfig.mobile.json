@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "paths": {} },
+  "include": ["mobile/**/*.ts", "mobile/**/*.vue", "api/types.ts", "model/standards.ts", "model/display.ts"],
+  "exclude": ["node_modules", "dist", "dist-mobile"]
+}
