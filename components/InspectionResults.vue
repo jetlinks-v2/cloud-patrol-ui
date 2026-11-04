@@ -1,0 +1,37 @@
+<template>
+  <a-space direction="vertical" style="width: 100%">
+    <a-tag :color="resultColor(record.result)">{{ t(`Patrol.checkResults.${enumValue(record.result) || 'not_evaluated'}`) }}</a-tag>
+    <a-card v-for="item in record.standardSnapshot" :key="item.id" :title="item.title" size="small">
+      <a-descriptions :column="1" size="small">
+        <a-descriptions-item :label="t('Patrol.itemType')">{{ t(`Patrol.itemTypes.${itemType(item)}`) }}</a-descriptions-item>
+        <a-descriptions-item v-if="item.lowerLimit != null || item.upperLimit != null" :label="t('Patrol.referenceRange')">
+          {{ item.lowerLimit ?? '—' }} ~ {{ item.upperLimit ?? '—' }}
+        </a-descriptions-item>
+        <a-descriptions-item v-if="item.referenceText" :label="t('Patrol.referenceText')">{{ item.referenceText }}</a-descriptions-item>
+        <a-descriptions-item v-if="itemType(item) !== 'image'" :label="t('Patrol.answer')">{{ answer(item.id)?.value || '—' }}</a-descriptions-item>
+        <a-descriptions-item :label="t('Patrol.checkResult')">
+          <a-tag :color="resultColor(result(item.id))">{{ t(`Patrol.checkResults.${enumValue(result(item.id)) || 'not_evaluated'}`) }}</a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item v-if="answer(item.id)?.attachmentId" :label="t('Patrol.submittedImage')">
+          <PatrolImage :file-id="answer(item.id)?.attachmentId" readonly />
+        </a-descriptions-item>
+        <a-descriptions-item v-if="item.exampleFileId" :label="t('Patrol.exampleImage')">
+          <PatrolImage :file-id="item.exampleFileId" readonly />
+        </a-descriptions-item>
+      </a-descriptions>
+    </a-card>
+  </a-space>
+</template>
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { Space as ASpace, Card as ACard, Tag as ATag, Descriptions as ADescriptions, DescriptionsItem as ADescriptionsItem } from 'ant-design-vue'
+import { itemType, enumValue } from '../model/standards'
+import type { Execution, CheckResult, EnumValue } from '../api/types'
+import PatrolImage from './PatrolImage.vue'
+const props = defineProps<{ record: Execution }>()
+const { t } = useI18n()
+const answer = (id: string) => props.record.answers.find(item => item.itemId === id)
+const result = (id: string) => props.record.itemResults?.find(item => item.itemId === id)?.result
+const resultColor = (value?: CheckResult | EnumValue<CheckResult> | null) =>
+  ({ pass: 'success', fail: 'error', not_evaluated: 'default' })[enumValue(value) || 'not_evaluated']
+</script>

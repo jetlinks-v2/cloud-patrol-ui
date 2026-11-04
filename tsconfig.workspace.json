@@ -3,6 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "vue": ["../../../sass平台/cloud.jetlinks/runtime-ui/node_modules/vue"],
+      "vue/*": ["../../../sass平台/cloud.jetlinks/runtime-ui/node_modules/vue/*"],
       "@jetlinks-web-core/*": [
         "../../../sass平台/cloud.jetlinks/runtime-ui/jetlinks-web-core/src/*"
       ],
