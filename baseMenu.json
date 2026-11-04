@@ -1,558 +1,539 @@
 [
   {
-    "id": "cloud-patrol",
-    "code": "cloud-patrol",
-    "name": "智能巡更",
+    "id": "patrol-base",
+    "code": "patrol/base",
+    "name": "巡更基础管理",
     "i18nMessages": {
       "name": {
-        "zh": "智能巡更",
-        "en": "Patrol"
+        "zh": "巡更基础管理",
+        "en": "Patrol settings"
       }
     },
     "owner": "app",
-    "url": "/park/patrol",
-    "icon": "icon-yingyongguanli",
-    "sortIndex": 75,
+    "url": "/park/patrol/base",
+    "icon": "UnorderedListOutlined",
+    "sortIndex": 1,
     "permissions": [],
     "buttons": [],
     "children": [
       {
-        "id": "patrol-base",
-        "code": "patrol/base",
-        "name": "巡更基础管理",
+        "id": "patrol-levels",
+        "code": "patrol/levels",
+        "name": "点位等级",
         "i18nMessages": {
           "name": {
-            "zh": "巡更基础管理",
-            "en": "Patrol settings"
+            "zh": "点位等级",
+            "en": "Levels"
           }
         },
         "owner": "app",
-        "url": "/park/patrol/base",
+        "url": "/park/patrol/levels",
         "icon": "UnorderedListOutlined",
+        "showPage": [
+          "patrol-level"
+        ],
+        "assetType": "patrolLevel",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolLevel"
+        ],
         "sortIndex": 1,
-        "permissions": [],
-        "buttons": [],
-        "children": [
+        "permissions": [
           {
-            "id": "patrol-levels",
-            "code": "patrol/levels",
-            "name": "点位等级",
-            "i18nMessages": {
-              "name": {
-                "zh": "点位等级",
-                "en": "Levels"
-              }
-            },
-            "owner": "app",
-            "url": "/park/patrol/levels",
-            "icon": "UnorderedListOutlined",
-            "showPage": [
-              "patrol-level"
-            ],
-            "assetType": "patrolLevel",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolLevel"
-            ],
-            "sortIndex": 1,
+            "permission": "patrol-level",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "save",
+            "name": "保存",
             "permissions": [
               {
                 "permission": "patrol-level",
                 "actions": [
-                  "query"
-                ]
-              }
-            ],
-            "buttons": [
-              {
-                "id": "save",
-                "name": "保存",
-                "permissions": [
-                  {
-                    "permission": "patrol-level",
-                    "actions": [
-                      "save"
-                    ]
-                  }
+                  "save"
                 ]
               }
             ]
           },
           {
-            "id": "patrol-standards",
-            "code": "patrol/standards",
-            "name": "巡更标准",
+            "id": "delete",
+            "name": "删除",
             "i18nMessages": {
-              "name": {
-                "zh": "巡更标准",
-                "en": "Inspection standards"
-              }
+              "zh_CN": "删除",
+              "en_US": "Delete",
+              "en": "Delete"
             },
-            "owner": "app",
-            "url": "/park/patrol/standards",
-            "showPage": [
-              "patrol-standard"
-            ],
-            "assetType": "patrolStandard",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolStandard",
-              "patrolAttachment"
-            ],
-            "sortIndex": 2,
+            "permissions": [
+              {
+                "permission": "patrol-level",
+                "actions": [
+                  "delete"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "patrol-standards",
+        "code": "patrol/standards",
+        "name": "巡更标准",
+        "i18nMessages": {
+          "name": {
+            "zh": "巡更标准",
+            "en": "Inspection standards"
+          }
+        },
+        "owner": "app",
+        "url": "/park/patrol/standards",
+        "showPage": [
+          "patrol-standard"
+        ],
+        "assetType": "patrolStandard",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolStandard",
+          "patrolAttachment"
+        ],
+        "sortIndex": 2,
+        "permissions": [
+          {
+            "permission": "patrol-standard",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-attachment",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "save",
+            "name": "保存",
             "permissions": [
               {
                 "permission": "patrol-standard",
                 "actions": [
-                  "query"
+                  "save"
                 ]
               },
               {
                 "permission": "patrol-attachment",
                 "actions": [
-                  "query"
+                  "save"
                 ]
               }
-            ],
-            "buttons": [
-              {
-                "id": "save",
-                "name": "保存",
-                "permissions": [
-                  {
-                    "permission": "patrol-standard",
-                    "actions": [
-                      "save"
-                    ]
-                  },
-                  {
-                    "permission": "patrol-attachment",
-                    "actions": [
-                      "save"
-                    ]
-                  }
-                ]
-              }
-            ],
-            "icon": "UnorderedListOutlined"
+            ]
           },
           {
-            "id": "patrol-categories",
-            "code": "patrol/categories",
-            "name": "巡更点分类",
+            "id": "delete",
+            "name": "删除",
             "i18nMessages": {
-              "name": {
-                "zh": "巡更点分类",
-                "en": "Categories"
-              }
+              "zh_CN": "删除",
+              "en_US": "Delete",
+              "en": "Delete"
             },
-            "owner": "app",
-            "url": "/park/patrol/categories",
-            "showPage": [
-              "patrol-category"
-            ],
-            "assetType": "patrolCategory",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolCategory"
-            ],
-            "sortIndex": 3,
+            "permissions": [
+              {
+                "permission": "patrol-standard",
+                "actions": [
+                  "delete"
+                ]
+              }
+            ]
+          }
+        ],
+        "icon": "UnorderedListOutlined"
+      },
+      {
+        "id": "patrol-categories",
+        "code": "patrol/categories",
+        "name": "巡更点分类",
+        "i18nMessages": {
+          "name": {
+            "zh": "巡更点分类",
+            "en": "Categories"
+          }
+        },
+        "owner": "app",
+        "url": "/park/patrol/categories",
+        "showPage": [
+          "patrol-category"
+        ],
+        "assetType": "patrolCategory",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolCategory"
+        ],
+        "sortIndex": 3,
+        "permissions": [
+          {
+            "permission": "patrol-category",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "save",
+            "name": "保存",
             "permissions": [
               {
                 "permission": "patrol-category",
                 "actions": [
-                  "query"
+                  "save"
                 ]
               }
-            ],
-            "buttons": [
-              {
-                "id": "save",
-                "name": "保存",
-                "permissions": [
-                  {
-                    "permission": "patrol-category",
-                    "actions": [
-                      "save"
-                    ]
-                  }
-                ]
-              }
-            ],
-            "icon": "UnorderedListOutlined"
-          },
+            ]
+          }
+        ],
+        "icon": "UnorderedListOutlined"
+      },
+      {
+        "id": "patrol-warnings",
+        "code": "patrol/warnings",
+        "name": "异常预警配置",
+        "i18nMessages": {
+          "name": {
+            "zh": "异常预警配置",
+            "en": "Warning configuration"
+          }
+        },
+        "owner": "app",
+        "url": "/park/patrol/warnings",
+        "icon": "UnorderedListOutlined",
+        "showPage": [
+          "patrol-warning"
+        ],
+        "assetType": "patrolWarning",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolWarning"
+        ],
+        "sortIndex": 4,
+        "permissions": [
           {
-            "id": "patrol-warnings",
-            "code": "patrol/warnings",
-            "name": "异常预警配置",
-            "i18nMessages": {
-              "name": {
-                "zh": "异常预警配置",
-                "en": "Warnings"
-              }
-            },
-            "owner": "app",
-            "url": "/park/patrol/warnings",
-            "icon": "UnorderedListOutlined",
-            "showPage": [
-              "patrol-warning"
-            ],
-            "assetType": "patrolWarning",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolWarning"
-            ],
-            "sortIndex": 4,
+            "permission": "patrol-warning",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "save",
+            "name": "保存",
             "permissions": [
               {
                 "permission": "patrol-warning",
                 "actions": [
-                  "query"
+                  "save"
                 ]
               }
-            ],
-            "buttons": [
+            ]
+          },
+          {
+            "id": "delete",
+            "name": "删除",
+            "i18nMessages": {
+              "zh_CN": "删除",
+              "en_US": "Delete",
+              "en": "Delete"
+            },
+            "permissions": [
               {
-                "id": "save",
-                "name": "保存",
-                "permissions": [
-                  {
-                    "permission": "patrol-warning",
-                    "actions": [
-                      "save"
-                    ]
-                  }
+                "permission": "patrol-warning",
+                "actions": [
+                  "delete"
                 ]
               }
             ]
           }
         ]
-      },
+      }
+    ]
+  },
+  {
+    "id": "patrol-point-management",
+    "code": "patrol/point-management",
+    "name": "巡更点管理",
+    "i18nMessages": {
+      "name": {
+        "zh": "巡更点管理",
+        "en": "Patrol points"
+      }
+    },
+    "owner": "app",
+    "url": "/park/patrol/point-management",
+    "icon": "UnorderedListOutlined",
+    "sortIndex": 2,
+    "permissions": [],
+    "buttons": [],
+    "children": [
       {
-        "id": "patrol-point-management",
-        "code": "patrol/point-management",
-        "name": "巡更点管理",
+        "id": "patrol-points",
+        "code": "patrol/points",
+        "name": "巡更点位管理",
         "i18nMessages": {
           "name": {
-            "zh": "巡更点管理",
+            "zh": "巡更点位管理",
             "en": "Patrol points"
           }
         },
         "owner": "app",
-        "url": "/park/patrol/point-management",
-        "icon": "UnorderedListOutlined",
-        "sortIndex": 2,
-        "permissions": [],
-        "buttons": [],
-        "children": [
+        "url": "/park/patrol/points",
+        "showPage": [
+          "patrol-point"
+        ],
+        "assetType": "patrolPoint",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolPoint",
+          "patrolTag",
+          "patrolCategory",
+          "patrolPost",
+          "patrolPlan",
+          "patrolRoster",
+          "patrolLevel",
+          "patrolStandard",
+          "user"
+        ],
+        "sortIndex": 1,
+        "permissions": [
           {
-            "id": "patrol-points",
-            "code": "patrol/points",
-            "name": "巡更点位管理",
-            "i18nMessages": {
-              "name": {
-                "zh": "巡更点位管理",
-                "en": "Patrol points"
-              }
-            },
-            "owner": "app",
-            "url": "/park/patrol/points",
-            "showPage": [
-              "patrol-point"
-            ],
-            "assetType": "patrolPoint",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolPoint",
-              "patrolTag",
-              "patrolCategory",
-              "patrolPost",
-              "patrolPlan",
-              "patrolRoster",
-              "patrolLevel",
-              "patrolStandard",
-              "user"
-            ],
-            "sortIndex": 1,
+            "permission": "patrol-point",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-tag",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-category",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-post",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-plan",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-roster",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-level",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-standard",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "save",
+            "name": "保存",
             "permissions": [
               {
                 "permission": "patrol-point",
                 "actions": [
-                  "query"
+                  "save"
                 ]
-              },
-              {
-                "permission": "patrol-tag",
-                "actions": [
-                  "query"
-                ]
-              },
-              {
-                "permission": "patrol-category",
-                "actions": [
-                  "query"
-                ]
-              },
+              }
+            ]
+          },
+          {
+            "id": "posts",
+            "name": "巡更岗位与成员",
+            "permissions": [
               {
                 "permission": "patrol-post",
                 "actions": [
-                  "query"
+                  "save"
                 ]
-              },
+              }
+            ]
+          },
+          {
+            "id": "assign",
+            "name": "指定巡更岗位 / 配置规则",
+            "permissions": [
               {
                 "permission": "patrol-plan",
                 "actions": [
-                  "query"
+                  "save"
                 ]
-              },
+              }
+            ]
+          },
+          {
+            "id": "importRoster",
+            "name": "导入排班表",
+            "permissions": [
               {
                 "permission": "patrol-roster",
                 "actions": [
-                  "query"
-                ]
-              },
-              {
-                "permission": "patrol-level",
-                "actions": [
-                  "query"
-                ]
-              },
-              {
-                "permission": "patrol-standard",
-                "actions": [
-                  "query"
+                  "save"
                 ]
               }
-            ],
-            "buttons": [
-              {
-                "id": "save",
-                "name": "保存",
-                "permissions": [
-                  {
-                    "permission": "patrol-point",
-                    "actions": [
-                      "save"
-                    ]
-                  }
-                ]
-              },
-              {
-                "id": "posts",
-                "name": "巡更岗位与成员",
-                "permissions": [
-                  {
-                    "permission": "patrol-post",
-                    "actions": [
-                      "save"
-                    ]
-                  }
-                ]
-              },
-              {
-                "id": "assign",
-                "name": "指定巡更岗位 / 配置规则",
-                "permissions": [
-                  {
-                    "permission": "patrol-plan",
-                    "actions": [
-                      "save"
-                    ]
-                  }
-                ]
-              },
-              {
-                "id": "importRoster",
-                "name": "导入排班表",
-                "permissions": [
-                  {
-                    "permission": "patrol-roster",
-                    "actions": [
-                      "save"
-                    ]
-                  }
-                ]
-              }
-            ],
-            "icon": "UnorderedListOutlined"
-          },
-          {
-            "id": "patrol-calendar",
-            "code": "patrol/calendar",
-            "name": "排班日历",
-            "i18nMessages": {
-              "name": {
-                "zh": "排班日历",
-                "en": "Calendar"
-              }
-            },
-            "owner": "app",
-            "url": "/park/patrol/calendar",
-            "icon": "UnorderedListOutlined",
-            "showPage": [
-              "patrol-calendar"
-            ],
-            "assetType": "patrolRoster",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolRoster",
-              "patrolPlan"
-            ],
-            "sortIndex": 2,
-            "permissions": [
-              {
-                "permission": "patrol-calendar",
-                "actions": [
-                  "query"
-                ]
-              }
-            ],
-            "buttons": []
+            ]
           }
-        ]
+        ],
+        "icon": "UnorderedListOutlined"
       },
       {
-        "id": "patrol-record-management",
-        "code": "patrol/record-management",
+        "id": "patrol-calendar",
+        "code": "patrol/calendar",
+        "name": "排班日历",
+        "i18nMessages": {
+          "name": {
+            "zh": "排班日历",
+            "en": "Calendar"
+          }
+        },
+        "owner": "app",
+        "url": "/park/patrol/calendar",
+        "icon": "UnorderedListOutlined",
+        "showPage": [
+          "patrol-calendar"
+        ],
+        "assetType": "patrolRoster",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolRoster",
+          "patrolPlan"
+        ],
+        "sortIndex": 2,
+        "permissions": [
+          {
+            "permission": "patrol-calendar",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": []
+      }
+    ]
+  },
+  {
+    "id": "patrol-record-management",
+    "code": "patrol/record-management",
+    "name": "巡更记录",
+    "i18nMessages": {
+      "name": {
+        "zh": "巡更记录",
+        "en": "Patrol records"
+      }
+    },
+    "owner": "app",
+    "url": "/park/patrol/record-management",
+    "icon": "UnorderedListOutlined",
+    "sortIndex": 4,
+    "permissions": [],
+    "buttons": [],
+    "children": [
+      {
+        "id": "patrol-records",
+        "code": "patrol/records",
         "name": "巡更记录",
         "i18nMessages": {
           "name": {
             "zh": "巡更记录",
-            "en": "Patrol records"
+            "en": "Execution records"
           }
         },
         "owner": "app",
-        "url": "/park/patrol/record-management",
-        "icon": "UnorderedListOutlined",
-        "sortIndex": 4,
-        "permissions": [],
-        "buttons": [],
-        "children": [
+        "url": "/park/patrol/records",
+        "showPage": [
+          "patrol-execution"
+        ],
+        "assetType": "patrolPlan",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolPlan",
+          "patrolAttachment",
+          "user",
+          "patrolCategory",
+          "patrolLevel"
+        ],
+        "sortIndex": 8,
+        "permissions": [
           {
-            "id": "patrol-records",
-            "code": "patrol/records",
-            "name": "巡更记录",
+            "permission": "patrol-execution",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-attachment",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-level",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": [
+          {
+            "id": "mobile",
+            "name": "手机巡更",
             "i18nMessages": {
-              "name": {
-                "zh": "巡更记录",
-                "en": "Execution records"
-              }
+              "zh_CN": "手机巡更",
+              "en_US": "Mobile patrol",
+              "en": "Mobile patrol"
             },
-            "owner": "app",
-            "url": "/park/patrol/records",
-            "showPage": [
-              "patrol-execution"
-            ],
-            "assetType": "patrolPlan",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolPlan",
-              "patrolAttachment",
-              "user",
-              "patrolCategory"
-            ],
-            "sortIndex": 8,
             "permissions": [
+              {
+                "permission": "patrol-task",
+                "actions": [
+                  "query"
+                ]
+              },
               {
                 "permission": "patrol-execution",
                 "actions": [
-                  "query"
+                  "submit",
+                  "submitMissed"
                 ]
               },
               {
                 "permission": "patrol-attachment",
                 "actions": [
-                  "query"
-                ]
-              }
-            ],
-            "buttons": [
-              {
-                "id": "mobile",
-                "name": "手机巡更",
-                "i18nMessages": {
-                  "name": {
-                    "zh": "手机巡更",
-                    "en": "Mobile patrol"
-                  }
-                },
-                "permissions": [
-                  {
-                    "permission": "patrol-task",
-                    "actions": [
-                      "query"
-                    ]
-                  },
-                  {
-                    "permission": "patrol-execution",
-                    "actions": [
-                      "submit"
-                    ]
-                  },
-                  {
-                    "permission": "patrol-attachment",
-                    "actions": [
-                      "save"
-                    ]
-                  },
-                  {
-                    "permission": "patrol-category",
-                    "actions": [
-                      "query"
-                    ]
-                  }
-                ]
-              }
-            ],
-            "icon": "UnorderedListOutlined"
-          }
-        ]
-      },
-      {
-        "id": "patrol-statistics",
-        "code": "patrol/statistics",
-        "name": "巡更统计",
-        "i18nMessages": {
-          "name": {
-            "zh": "巡更统计",
-            "en": "Patrol statistics"
-          }
-        },
-        "owner": "app",
-        "url": "/park/patrol/statistics",
-        "icon": "UnorderedListOutlined",
-        "sortIndex": 5,
-        "permissions": [],
-        "buttons": [],
-        "children": [
-          {
-            "id": "patrol-coverage",
-            "code": "patrol/coverage",
-            "name": "点位覆盖率",
-            "i18nMessages": {
-              "name": {
-                "zh": "点位覆盖率",
-                "en": "Coverage"
-              }
-            },
-            "owner": "app",
-            "url": "/park/patrol/coverage",
-            "icon": "UnorderedListOutlined",
-            "showPage": [
-              "patrol-report"
-            ],
-            "assetType": "patrolPlan",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolPlan",
-              "patrolCategory"
-            ],
-            "sortIndex": 1,
-            "permissions": [
-              {
-                "permission": "patrol-report",
-                "actions": [
-                  "query"
+                  "save"
                 ]
               },
               {
@@ -561,158 +542,181 @@
                   "query"
                 ]
               }
-            ],
-            "buttons": []
+            ]
           },
           {
-            "id": "patrol-qualification",
-            "code": "patrol/qualification",
-            "name": "点位合格率",
+            "id": "applyMissed",
+            "name": "申报漏检",
             "i18nMessages": {
-              "name": {
-                "zh": "点位合格率",
-                "en": "Qualification"
-              }
+              "zh_CN": "申报漏检",
+              "en_US": "Apply missed",
+              "en": "Apply missed"
             },
-            "owner": "app",
-            "url": "/park/patrol/qualification",
-            "icon": "UnorderedListOutlined",
-            "showPage": [
-              "patrol-report"
-            ],
-            "assetType": "patrolPlan",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolPlan",
-              "patrolCategory"
-            ],
-            "sortIndex": 2,
             "permissions": [
               {
-                "permission": "patrol-report",
+                "permission": "patrol-execution",
                 "actions": [
-                  "query"
-                ]
-              },
-              {
-                "permission": "patrol-category",
-                "actions": [
-                  "query"
+                  "applyMissed"
                 ]
               }
-            ],
-            "buttons": []
+            ]
           },
           {
-            "id": "patrol-personnel",
-            "code": "patrol/personnel",
-            "name": "人员巡更覆盖率",
+            "id": "auditMissed",
+            "name": "审核漏检",
             "i18nMessages": {
-              "name": {
-                "zh": "人员巡更覆盖率",
-                "en": "Personnel"
-              }
+              "zh_CN": "审核漏检",
+              "en_US": "Review missed",
+              "en": "Review missed"
             },
-            "owner": "app",
-            "url": "/park/patrol/personnel",
-            "icon": "UnorderedListOutlined",
-            "showPage": [
-              "patrol-report"
-            ],
-            "assetType": "patrolPlan",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolPlan",
-              "patrolCategory"
-            ],
-            "sortIndex": 3,
             "permissions": [
               {
-                "permission": "patrol-report",
+                "permission": "patrol-execution",
                 "actions": [
-                  "query"
-                ]
-              },
-              {
-                "permission": "patrol-category",
-                "actions": [
-                  "query"
-                ]
-              }
-            ],
-            "buttons": []
-          }
-        ]
-      },
-      {
-        "id": "patrol-tag-management",
-        "code": "patrol/tag-management",
-        "name": "标签管理",
-        "i18nMessages": {
-          "name": {
-            "zh": "标签管理",
-            "en": "Tags"
-          }
-        },
-        "owner": "app",
-        "url": "/park/patrol/tag-management",
-        "icon": "TagsOutlined",
-        "sortIndex": 6,
-        "permissions": [],
-        "buttons": [],
-        "children": [
-          {
-            "id": "patrol-tags",
-            "code": "patrol/tags",
-            "name": "标签管理",
-            "i18nMessages": {
-              "name": {
-                "zh": "标签管理",
-                "en": "Tags"
-              }
-            },
-            "owner": "app",
-            "url": "/park/patrol/tags",
-            "icon": "UnorderedListOutlined",
-            "showPage": [
-              "patrol-tag"
-            ],
-            "assetType": "patrolTag",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolTag"
-            ],
-            "sortIndex": 1,
-            "permissions": [
-              {
-                "permission": "patrol-tag",
-                "actions": [
-                  "query"
-                ]
-              }
-            ],
-            "buttons": [
-              {
-                "id": "save",
-                "name": "保存",
-                "permissions": [
-                  {
-                    "permission": "patrol-tag",
-                    "actions": [
-                      "save"
-                    ]
-                  }
+                  "auditMissed"
                 ]
               }
             ]
           }
-        ]
+        ],
+        "icon": "UnorderedListOutlined"
       }
-    ],
-    "options": {
-      "meta": {
-        "applicationNavigation": "sidebar"
+    ]
+  },
+  {
+    "id": "patrol-statistics",
+    "code": "patrol/statistics",
+    "name": "巡更统计",
+    "i18nMessages": {
+      "name": {
+        "zh": "巡更统计",
+        "en": "Patrol statistics"
       }
-    }
+    },
+    "owner": "app",
+    "url": "/park/patrol/statistics",
+    "icon": "UnorderedListOutlined",
+    "sortIndex": 5,
+    "permissions": [],
+    "buttons": [],
+    "children": [
+      {
+        "id": "patrol-coverage",
+        "code": "patrol/coverage",
+        "name": "点位覆盖率",
+        "i18nMessages": {
+          "name": {
+            "zh": "点位覆盖率",
+            "en": "Coverage"
+          }
+        },
+        "owner": "app",
+        "url": "/park/patrol/coverage",
+        "icon": "UnorderedListOutlined",
+        "showPage": [
+          "patrol-report"
+        ],
+        "assetType": "patrolPlan",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolPlan",
+          "patrolCategory"
+        ],
+        "sortIndex": 1,
+        "permissions": [
+          {
+            "permission": "patrol-report",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-category",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": []
+      },
+      {
+        "id": "patrol-qualification",
+        "code": "patrol/qualification",
+        "name": "点位合格率",
+        "i18nMessages": {
+          "name": {
+            "zh": "点位合格率",
+            "en": "Qualification"
+          }
+        },
+        "owner": "app",
+        "url": "/park/patrol/qualification",
+        "icon": "UnorderedListOutlined",
+        "showPage": [
+          "patrol-report"
+        ],
+        "assetType": "patrolPlan",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolPlan",
+          "patrolCategory"
+        ],
+        "sortIndex": 2,
+        "permissions": [
+          {
+            "permission": "patrol-report",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-category",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": []
+      },
+      {
+        "id": "patrol-personnel",
+        "code": "patrol/personnel",
+        "name": "人员巡更覆盖率",
+        "i18nMessages": {
+          "name": {
+            "zh": "人员巡更覆盖率",
+            "en": "Personnel"
+          }
+        },
+        "owner": "app",
+        "url": "/park/patrol/personnel",
+        "icon": "UnorderedListOutlined",
+        "showPage": [
+          "patrol-report"
+        ],
+        "assetType": "patrolPlan",
+        "accessSupport": "support",
+        "assetTypes": [
+          "patrolPlan",
+          "patrolCategory"
+        ],
+        "sortIndex": 3,
+        "permissions": [
+          {
+            "permission": "patrol-report",
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-category",
+            "actions": [
+              "query"
+            ]
+          }
+        ],
+        "buttons": []
+      }
+    ]
   }
 ]

@@ -5,6 +5,9 @@
   "private": true,
   "type": "module",
   "main": "index.ts",
+  "dependencies": {
+    "jsqr": "1.4.0"
+  },
   "scripts": {
     "build": "vite build",
     "typecheck": "vue-tsc --noEmit",

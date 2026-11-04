@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import { useI18n } from 'vue-i18n'
 import { onlyMessage } from '@jetlinks-web/utils'
@@ -8,6 +8,8 @@ export function useRosterImport() {
   const { t } = useI18n()
   const month = ref(dayjs().format('YYYY-MM')), file = ref<File>()
   const busy = ref(false), failed = ref(false), imported = ref<number>()
+  // 换月后必须重新选择对应模板，避免沿用上月文件或成功提示。
+  watch(month, () => { file.value = undefined; failed.value = false; imported.value = undefined }, { flush: 'sync' })
   async function run(action: () => Promise<unknown>) {
     if (busy.value) return
     busy.value = true; failed.value = false
@@ -21,6 +23,6 @@ export function useRosterImport() {
     imported.value = response.result
     onlyMessage(t('Patrol.imported', { count: response.result }), 'success')
   })
-  function selectFile(value: File) { file.value = value; imported.value = undefined; return false }
+  function selectFile(value: File) { file.value = value; imported.value = undefined; failed.value = false; return false }
   return { month, file, busy, failed, imported, download, submit, selectFile }
 }

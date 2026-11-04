@@ -5,13 +5,18 @@ import { answerErrors, imageAllowed, newRequestId, submissionFor, type MobileTas
 import { resolveContext, MobileError, type MobileContext } from './transport'
 import * as api from './api'
 import { pendingStore } from './pending'
+import { historyQuery, type HistoryFilters } from './history'
+import { matchScannedTasks, scannedPointId } from './scan/match'
 
 interface Draft { answers: Answer[]; remark: string; pending?: Submission }
 /** 页面会话保存草稿；响应丢失后锁定原请求体与请求号，重试不会创建第二次巡更。 */
 export function useMobilePatrol() {
   const context = ref<MobileContext>(), date = ref(businessTime().format('YYYY-MM-DD'))
   const tab = ref<'tasks' | 'history'>('tasks'), rows = ref<MobileTask[]>([]), records = ref<Execution[]>([])
-  const mine = ref(true), categories = ref<ConfigEntity[]>([])
+  const mine = ref(true), categories = ref<ConfigEntity[]>([]), levels = ref<ConfigEntity[]>([])
+  const defaultHistory = (): HistoryFilters => ({ from: businessTime().format('YYYY-MM-DD'), to: businessTime().format('YYYY-MM-DD'), pointName: '', categoryId: '', levelId: '' })
+  const historyFilters = ref<HistoryFilters>(defaultHistory()), appliedHistory = ref<HistoryFilters>(defaultHistory())
+  const filterError = ref(false)
   const selected = ref<MobileTask>(), record = ref<Execution>(), success = ref<Execution>()
   const loading = ref(false), sending = ref(false), uploading = ref(false), error = ref('')
   const draft = ref<Draft>({ answers: [], remark: '' }), errors = ref<Record<string, string>>({})
@@ -46,15 +51,11 @@ export function useMobilePatrol() {
         return
       }
       if (tab.value === 'tasks') {
-        const [data, categoryPage] = await Promise.all([api.myTasks(date.value, mine.value), api.categories()])
-        if (!disposed && current === version) { rows.value = data; categories.value = categoryPage.data }
+        const [data, categoryPage] = await Promise.all([api.myTasks(date.value, mine.value), api.configurationOptions('categories')])
+        if (!disposed && current === version) { rows.value = data; categories.value = categoryPage }
       } else {
         const nextPage = more ? page.value + 1 : 0
-        const start = Date.parse(`${date.value}T00:00:00+08:00`)
-        const data = await api.myHistory({ pageIndex: nextPage, pageSize: 20,
-          terms: [{ column: 'receiveTime', termType: 'gte', value: start },
-            { column: 'receiveTime', termType: 'lt', value: start + 86400000 }],
-          sorts: [{ name: 'receiveTime', order: 'desc' }, { name: 'id', order: 'desc' }] })
+        const data = await api.myHistory(historyQuery(appliedHistory.value, nextPage))
         if (!disposed && current === version) {
           records.value = more ? [...records.value, ...data.data] : data.data
           total.value = data.total; page.value = nextPage
@@ -62,6 +63,30 @@ export function useMobilePatrol() {
       }
     } catch (cause) { if (!disposed && current === version) fail(cause) }
     finally { if (!disposed && current === version) loading.value = false }
+  }
+  async function loadHistoryOptions() {
+    filterError.value = false
+    try {
+      const [categoryRows, levelRows] = await Promise.all([api.configurationOptions('categories'), api.configurationOptions('levels')])
+      if (!disposed) { categories.value = categoryRows; levels.value = levelRows }
+    } catch { if (!disposed) filterError.value = true }
+  }
+  async function scanPoint(raw: string): Promise<MobileTask[]> {
+    if (locked.value) throw new Error('Mobile.submitUncertain')
+    scannedPointId(raw)
+    context.value = await resolveContext()
+    if (pending.read(context.value)) throw new Error('Mobile.submitUncertain')
+    // 扫码不受首页“我的/全员”切换影响；后端始终按当前应用资产及当前用户计算资格。
+    const data = await api.myTasks(businessTime().format('YYYY-MM-DD'), false)
+    return matchScannedTasks(raw, data, Date.now())
+  }
+  function searchHistory(reset = false) {
+    if (locked.value) return
+    if (reset) historyFilters.value = defaultHistory()
+    try { historyQuery(historyFilters.value) } catch (cause) { fail(cause); return }
+    appliedHistory.value = { ...historyFilters.value }
+    records.value = []; total.value = 0; page.value = 0
+    void load()
   }
   function open(row: MobileTask) {
     selected.value = row; record.value = undefined; success.value = undefined; error.value = ''; errors.value = {}
@@ -102,7 +127,8 @@ export function useMobilePatrol() {
     if (!draft.value.pending) {
       errors.value = answerErrors(selected.value.task.standardSnapshot, draft.value.answers)
       if (Object.keys(errors.value).length) return
-      draft.value.pending = submissionFor(selected.value.task, draft.value.answers, draft.value.remark, newRequestId())
+      // 只在首次提交取样；响应丢失后重试沿用原始采集信息，不以重试时间覆盖。
+      draft.value.pending = submissionFor(selected.value.task, draft.value.answers, draft.value.remark, newRequestId(), { collectedTime: Date.now(), networkStatus: navigator.onLine ? 'online' : 'offline' })
       // 缓存写入失败时不发送，避免响应丢失且刷新后无法恢复同一次请求。
       try {
         if (!context.value) throw new Error('Mobile.sessionRequired')
@@ -123,6 +149,6 @@ export function useMobilePatrol() {
       } else error.value = 'Mobile.submitUncertain'
     } finally { sending.value = false }
   }
-  return { context, date, tab, mine, categories, rows, records, selected, record, success, loading, sending, uploading,
-    error, draft, errors, images, total, locked, reason, load, open, leave, changeAnswer, upload, preview, submit }
+  return { context, date, tab, mine, categories, levels, historyFilters, filterError, searchHistory, loadHistoryOptions, rows, records, selected, record, success, loading, sending, uploading,
+    error, draft, errors, images, total, locked, reason, load, open, leave, changeAnswer, upload, preview, submit, scanPoint }
 }

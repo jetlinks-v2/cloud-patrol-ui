@@ -21,15 +21,15 @@ test('mobile preserves precise decimals and rejects scientific notation and over
 test('submission is a detached snapshot with only task items and an immutable retry body', () => {
   const task = { id: 'task', standardSnapshot: [number, image] }
   const answers = [{ itemId: 'pressure', value: ' 999999999999999999.123456 ' }, { itemId: 'image', value: 'discard', attachmentId: 'photo' }, { itemId: 'injected', value: 'x' }]
-  const payload = submissionFor(task, answers, ' note ', 'original-request')
+  const payload = submissionFor(task, answers, ' note ', 'original-request', { collectedTime: 1793751000000, networkStatus: 'online' })
   answers[0].value = 'new'
-  assert.deepEqual(payload, { taskId: 'task', requestId: 'original-request', remark: 'note', answers: [
+  assert.deepEqual(payload, { taskId: 'task', requestId: 'original-request', collectedTime: 1793751000000, networkStatus: 'online', remark: 'note', answers: [
     { itemId: 'pressure', value: '999999999999999999.123456', attachmentId: null }, { itemId: 'image', value: null, attachmentId: 'photo' }] })
 })
 test('pending requests survive reload and are isolated by project, application and user', () => {
   const map = new Map(), storage = { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value), removeItem: key => map.delete(key) }
   const context = { projectId: 'north', applicationId: 'app', userId: 'alice' }
-  const submission = { taskId: 'task', requestId: newRequestId(), answers: [], remark: '' }
+  const submission = { taskId: 'task', requestId: newRequestId(), answers: [], remark: '', collectedTime: 1793751000000, networkStatus: 'offline' }
   const pending = { row: { task: { id: 'task' }, executable: true, reason: '' }, submission }
   pendingStore(storage).write(context, pending)
   assert.deepEqual(pendingStore(storage).read(context), pending)

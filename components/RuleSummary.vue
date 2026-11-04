@@ -6,17 +6,18 @@
       <span v-if="!row.windows.length">{{ t('Patrol.ruleSummary.rest') }}</span>
       <span v-for="(window, windowIndex) in row.windows" :key="windowIndex" class="rule-window">
         {{ ruleWindowTime(window).start }}–{{ ruleWindowTime(window).end }}<span v-if="ruleWindowTime(window).nextDay">（{{ t('Patrol.ruleSummary.nextDay') }}）</span>
-        {{ t('Patrol.ruleSummary.every', { minutes: window.intervalMinutes, count: window.requiredCount }) }}
+        <span v-else-if="window.startMinute === window.endMinute">（{{ t('Patrol.ruleSummary.allDay') }}）</span>
+        {{ t('Patrol.ruleEditor.every') }} {{ ruleQuantity(window.intervalMinutes, window.frequencyUnit).value }} {{ t(`Patrol.ruleEditor.unit${ruleQuantity(window.intervalMinutes, window.frequencyUnit).unit}`) }}{{ t('Patrol.ruleEditor.patrol') }} {{ window.requiredCount }} {{ t('Patrol.times') }}，
+        {{ t('Patrol.ruleEditor.interval') }} {{ ruleQuantity(window.cooldownMinutes ?? rule?.cooldownMinutes ?? 0, window.cooldownUnit).value }} {{ t(`Patrol.ruleEditor.unit${ruleQuantity(window.cooldownMinutes ?? rule?.cooldownMinutes ?? 0, window.cooldownUnit).unit}`) }}
       </span>
     </div>
-    <div v-if="rows.length">{{ t('Patrol.ruleSummary.cooldown', { minutes: rule?.cooldownMinutes ?? 0 }) }}</div>
   </div>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { PatrolRule } from '../api/types'
-import { ruleSummaryRows, ruleWindowTime } from '../model/rules'
+import { ruleSummaryRows, ruleWindowTime, ruleQuantity } from '../model/rules'
 const props = defineProps<{ rule?: PatrolRule }>()
 const { t } = useI18n()
 const rows = computed(() => ruleSummaryRows(props.rule))

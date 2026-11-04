@@ -6,9 +6,9 @@ import { pathToFileURL } from 'node:url'
 import { savePermission, resources } from '../model/resources.ts'
 const root = new URL('../', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
-const menu = JSON.parse(read('baseMenu.json'))[0]
+const menus = JSON.parse(read('baseMenu.json'))
 const flatten = nodes => nodes.flatMap(node => node.children?.length ? flatten(node.children) : [node])
-const pages = flatten(menu.children)
+const pages = flatten(menus)
 // 只读取物业仓库中的巡更源码，避免旧独立仓库掩盖迁移后的契约变化。
 const backend = process.env.PATROL_BACKEND_ROOT
   ? pathToFileURL(resolve(process.env.PATROL_BACKEND_ROOT) + sep)
@@ -46,7 +46,7 @@ test('page button permission expressions resolve to declared menu codes and butt
   assert.equal(checked, resources.length * 2)
 })
 test('menu, actual page, backend resource, application template and asset types align', () => {
-  assert.equal(pages.length, 11)
+  assert.equal(pages.length, 10)
   const seen = new Set()
   for (const item of pages) {
     assert(!seen.has(item.id))
@@ -106,6 +106,7 @@ test('Chinese and English dictionaries have identical keys and cover literal UI 
     'components/InspectionResults.vue',
     'views/patrol/records/index.vue',
     'views/patrol/points/index.vue',
+    'views/patrol/warnings/index.vue',
     'components/RosterImport.vue',
   ]) {
     for (const [, key] of read(file).matchAll(/(?:t\(|'|")(Patrol\.[A-Za-z0-9.]+)(?:'|")/g))
@@ -137,8 +138,37 @@ test('menu grants expose every template asset, including the person directory us
     assert(template.includes(`{id: ${id}, granted: true}`))
     assert(read('views/patrol/points/index.vue').includes(`patrol/points:${id}`))
   }
-  assert(menu.children.find(node => node.id === 'patrol-point-management').children.some(node => node.id === 'patrol-calendar'))
+  assert.deepEqual(menus.map(node => node.id), [
+    'patrol-base', 'patrol-point-management', 'patrol-record-management',
+    'patrol-statistics',
+  ])
+  assert(menus.every(node => node.children?.every(child => !child.children?.length)))
+  assert(menus.find(node => node.id === 'patrol-point-management').children.some(node => node.id === 'patrol-calendar'))
  })
+
+test('warning configuration has no tag management entry or write grant', () => {
+  const warnings = pages.find(page => page.id === 'patrol-warnings')
+  assert.equal(warnings.name, '异常预警配置')
+  assert(!pages.some(page => page.id === 'patrol-tags'))
+  assert(!template.includes('- id: patrol-tags\n'))
+  assert(!template.includes('- id: patrol-tag-management\n'))
+  assert.deepEqual(warnings.assetTypes, ['patrolWarning'])
+  assert.deepEqual(warnings.permissions, [
+    { permission: 'patrol-warning', actions: ['query'] },
+  ])
+  for (const [resource, buttonId, permission] of [
+    ['warnings', 'save', 'patrol-warning'],
+  ]) {
+    assert.equal(savePermission(resource), `patrol/warnings:${buttonId}`)
+    const button = warnings.buttons.find(button => button.id === buttonId)
+    assert.deepEqual(button.permissions, [{ permission, actions: ['save'] }])
+  }
+  assert(!template.includes('{id: tags, granted: true}'))
+  assert(!existsSync(new URL('views/patrol/tags/index.vue', root)))
+  assert(!read('views/patrol/warnings/index.vue').includes('resource="tags"'))
+  assert(pages.find(page => page.id === 'patrol-points').permissions.some(permission =>
+    permission.permission === 'patrol-tag' && permission.actions.includes('query')))
+})
 
 test('mobile execution grants are explicit and do not turn record queries into general writes', () => {
   const records = pages.find(page => page.id === 'patrol-records')
@@ -146,10 +176,20 @@ test('mobile execution grants are explicit and do not turn record queries into g
   const mobile = records.buttons.find(button => button.id === 'mobile')
   assert.deepEqual(mobile.permissions, [
     { permission: 'patrol-task', actions: ['query'] },
-    { permission: 'patrol-execution', actions: ['submit'] },
+    { permission: 'patrol-execution', actions: ['submit', 'submitMissed'] },
     { permission: 'patrol-attachment', actions: ['save'] },
     { permission: 'patrol-category', actions: ['query'] },
   ])
   assert(!records.permissions.some(permission => permission.actions.includes('submit')))
   assert(template.includes('{id: mobile, granted: true}'))
+})
+
+test('menu button translations use the JetLinks single-message string map contract', () => {
+  for (const page of pages) {
+    for (const button of page.buttons || []) {
+      for (const message of Object.values(button.i18nMessages || {})) {
+        assert.equal(typeof message, 'string', `${page.id}:${button.id} must use SingleI18nSupportEntity, not the menu translation shape`)
+      }
+    }
+  }
 })

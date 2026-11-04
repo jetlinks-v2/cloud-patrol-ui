@@ -21,7 +21,7 @@ export function standardError(items: CheckItem[]): string | undefined {
   if (!items.length || items.length > 100) return 'Patrol.standardItemsRequired'
   const ids = new Set<string>()
   for (const item of items) {
-    if (!item.id || !item.title.trim() || item.title.length > 128) return 'Patrol.itemTitleRequired'
+    if (!item.id || !item.title.trim() || item.title.length > 200) return 'Patrol.itemTitleRequired'
     if (ids.has(item.id)) return 'Patrol.duplicateItems'
     ids.add(item.id)
     const options = item.options ?? [], qualified = item.qualifiedOptions ?? []

@@ -1,8 +1,8 @@
 import type { Resource, ConfigEntity } from '../api/types'
 import { normalizeItem } from './standards.ts'
+import { defaultRule } from './rule-editor.ts'
 export const resources: Resource[] = [
   'levels',
-  'tags',
   'warnings',
   'categories',
   'points',
@@ -42,15 +42,15 @@ export function draftOf(resource: Resource, source?: ConfigEntity): ConfigEntity
     : { name: '', enabled: true, description: '' }
   if (resource === 'standards') draft.items = (draft.items ?? []).map(normalizeItem)
   if (resource === 'posts') draft.userIds ??= []
-  if (resource === 'points') draft.tagIds ??= []
+  if (resource === 'points') { draft.tagIds ??= []; delete draft.assignedPostIds }
   if (resource === 'warnings') {
     draft.triggerParentCode ??= 'route'
     draft.triggerChildCode ??= 'route_missed_point'
     draft.colorHex ??= '#409EFF'
   }
-  if (resource === 'levels') draft.rule ??= { weekly: {}, dates: {}, cooldownMinutes: 0 }
+  if (resource === 'levels') draft.rule ??= defaultRule()
   if (resource === 'plans') {
-    draft.rule ??= { weekly: {}, dates: {}, cooldownMinutes: 0 }
+    draft.rule ??= defaultRule()
     draft.rosterPolicy =
       typeof draft.rosterPolicy === 'object'
         ? draft.rosterPolicy.value

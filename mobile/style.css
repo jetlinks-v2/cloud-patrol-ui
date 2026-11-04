@@ -93,3 +93,8 @@ button, .upload-button { touch-action: manipulation; }
   .app-header { padding-top: max(env(safe-area-inset-top), var(--patrol-app-safe-top, 0px)); }
   .submit-bar { padding-bottom: max(14px, env(safe-area-inset-bottom), var(--patrol-app-safe-bottom, 0px)); }
 }
+.history-filters { display: grid; gap: 12px; }
+.history-filters label { display: flex; align-items: center; gap: 12px; }
+.history-filters label > span { flex: 0 0 72px; font-size: 13px; color: #5e6b7d; }
+.history-filters input, .history-filters select { flex: 1; min-width: 0; width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid #d9e0e8; border-radius: 7px; background: white; color: #172b4d; font-size: 16px; }
+.history-filter-actions { display: flex; justify-content: flex-end; gap: 10px; }

@@ -11,6 +11,11 @@ const { t } = useI18n()
   <section class="panel">
     <h2>{{ record.pointName }}</h2>
     <dl><dt>{{ t('Mobile.user') }}</dt><dd>{{ record.userName }}</dd>
+      <dt>{{ t('Mobile.window') }}</dt><dd>{{ dateTime(record.periodStartTime) }} — {{ dateTime(record.periodEndTime) }}</dd>
+      <dt v-if="record.categoryName">{{ t('Mobile.category') }}</dt><dd v-if="record.categoryName">{{ record.categoryName }}</dd>
+      <dt v-if="record.levelName">{{ t('Mobile.level') }}</dt><dd v-if="record.levelName">{{ record.levelName }}</dd>
+      <dt>{{ t('Mobile.collected') }}</dt><dd>{{ record.collectedTime == null ? t('Mobile.unrecorded') : dateTime(record.collectedTime) }}</dd>
+      <dt>{{ t('Mobile.networkStatus') }}</dt><dd>{{ t(`Mobile.networkStates.${enumValue(record.networkStatus) ?? 'unrecorded'}`) }}</dd>
       <dt>{{ t('Mobile.received') }}</dt><dd>{{ dateTime(record.receiveTime) }}</dd>
       <dt>{{ t('Mobile.answer') }}</dt><dd :class="`result-${enumValue(record.result)}`">{{ t(`Mobile.${enumValue(record.result) || 'not_evaluated'}`) }}</dd></dl>
   </section>

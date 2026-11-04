@@ -1,7 +1,7 @@
-import type { Answer, CheckItem, Task } from '../api/types'
+import type { Answer, CheckItem, Task, CollectionMetadata } from '../api/types'
 import { itemType } from '../model/standards.ts'
 export interface MobileTask { task: Task; executable: boolean; reason: string }
-export interface Submission { taskId: string; requestId: string; answers: Answer[]; remark: string }
+export interface Submission extends CollectionMetadata { taskId: string; requestId: string; answers: Answer[]; remark: string }
 /** 后端决定合格/不合格；前端只校验必填、选项、数字格式和附件是否齐全。 */
 export function answerErrors(items: CheckItem[], answers: Answer[]): Record<string, string> {
   const errors: Record<string, string> = {}
@@ -17,8 +17,8 @@ export function answerErrors(items: CheckItem[], answers: Answer[]): Record<stri
   }
   return errors
 }
-export function submissionFor(task: Task, answers: Answer[], remark: string, requestId: string): Submission {
-  return { taskId: task.id, requestId, remark: remark.trim(), answers: task.standardSnapshot.map(item => {
+export function submissionFor(task: Task, answers: Answer[], remark: string, requestId: string, metadata: CollectionMetadata): Submission {
+  return { taskId: task.id, requestId, collectedTime: metadata.collectedTime, networkStatus: metadata.networkStatus, remark: remark.trim(), answers: task.standardSnapshot.map(item => {
     const answer = answers.find(value => value.itemId === item.id)
     return { itemId: item.id, value: itemType(item) === 'image' ? null : answer?.value?.trim() || null,
       attachmentId: answer?.attachmentId || null }

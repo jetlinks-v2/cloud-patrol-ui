@@ -11,6 +11,7 @@
       mode="TABLE"
       type="PAGE"
       row-key="id"
+      :scroll="{ x: 1650 }"
       :alert-show="false"
       :default-params="{
         sorts: [
@@ -19,7 +20,10 @@
         ],
       }"
     >
+      <template #period="row">{{ dateTime(row.periodStartTime) }} ～ {{ dateTime(row.periodEndTime) }}</template>
       <template #result="row">{{ t(`Patrol.checkResults.${enumValue(row.result) ?? 'not_evaluated'}`) }}</template>
+      <template #collectedTime="row">{{ row.collectedTime == null ? t('Patrol.unrecorded') : dateTime(row.collectedTime) }}</template>
+      <template #networkStatus="row">{{ t(`Patrol.networkStates.${enumValue(row.networkStatus) ?? 'unrecorded'}`) }}</template>
       <template #receiveTime="row">{{ dateTime(row.receiveTime) }}</template>
       <template #actions="row"
         ><a-button type="link" @click="selected = row">{{
@@ -41,10 +45,15 @@
           <a-descriptions-item :label="t('Patrol.person')">{{
             selected.userName
           }}</a-descriptions-item>
+          <a-descriptions-item :label="t('Patrol.collectedTime')">{{ selected.collectedTime == null ? t('Patrol.unrecorded') : dateTime(selected.collectedTime) }}</a-descriptions-item>
+          <a-descriptions-item :label="t('Patrol.networkStatus')">{{ t(`Patrol.networkStates.${enumValue(selected.networkStatus) ?? 'unrecorded'}`) }}</a-descriptions-item>
           <a-descriptions-item :label="t('Patrol.receiveTime')">{{
             dateTime(selected.receiveTime)
           }}</a-descriptions-item>
           <a-descriptions-item :label="t('Patrol.periodNo')">{{ selected.periodNo ?? '—' }}</a-descriptions-item>
+          <a-descriptions-item :label="t('Patrol.periodTasks')">{{ dateTime(selected.periodStartTime) }} ～ {{ dateTime(selected.periodEndTime) }}</a-descriptions-item>
+          <a-descriptions-item :label="t('Patrol.category')">{{ selected.categoryName || '—' }}</a-descriptions-item>
+          <a-descriptions-item :label="t('Patrol.level')">{{ selected.levelName || '—' }}</a-descriptions-item>
           <a-descriptions-item :label="t('Patrol.remark')">{{
             selected.remark || '—'
           }}</a-descriptions-item>
@@ -89,6 +98,10 @@ const fields = computed(() => [
     dataIndex: 'userName',
     search: { type: 'string', defaultTermType: 'like' },
   },
+  { title: t('Patrol.collectedTime'), dataIndex: 'collectedTime', search: { type: 'date', defaultTermType: 'btw' } },
+  { title: t('Patrol.networkStatus'), dataIndex: 'networkStatus', search: { type: 'select', defaultTermType: 'eq', termTypeOptions: ['eq', 'not'], options: [
+    { label: t('Patrol.networkStates.online'), value: 'online' }, { label: t('Patrol.networkStates.offline'), value: 'offline' },
+  ] } },
   {
     title: t('Patrol.receiveTime'),
     dataIndex: 'receiveTime',
@@ -97,8 +110,11 @@ const fields = computed(() => [
 ])
 const columns = computed(() => [
   { title: t('Patrol.periodNo'), dataIndex: 'periodNo', key: 'periodNo' },
+  { title: t('Patrol.periodTasks'), dataIndex: 'period', key: 'period', scopedSlots: true, width: 310 },
   { title: t('Patrol.point'), dataIndex: 'pointName', key: 'pointName' },
   { title: t('Patrol.person'), dataIndex: 'userName', key: 'userName' },
+  { title: t('Patrol.collectedTime'), dataIndex: 'collectedTime', key: 'collectedTime', scopedSlots: true, width: 180 },
+  { title: t('Patrol.networkStatus'), dataIndex: 'networkStatus', key: 'networkStatus', scopedSlots: true, width: 130 },
   {
     title: t('Patrol.receiveTime'),
     dataIndex: 'receiveTime',

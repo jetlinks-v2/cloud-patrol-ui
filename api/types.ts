@@ -9,6 +9,9 @@ export interface RuleWindow {
   endMinute: number
   intervalMinutes: number
   requiredCount: number
+  cooldownMinutes?: number | null
+  frequencyUnit?: '1' | '2' | '3' | null
+  cooldownUnit?: '1' | '2' | '3' | null
 }
 export interface PatrolRule {
   weekly: Record<string, RuleWindow[]>
@@ -38,9 +41,12 @@ export interface ConfigEntity {
   description?: string
   createTime?: number
   modifyTime?: number
+  creatorName?: string | null
+  modifierName?: string | null
   parentId?: string
   code?: string
   categoryId?: string
+  assignedPostIds?: string[]
   tagIds?: string[]
   levelId?: string
   shiftName?: string
@@ -76,6 +82,12 @@ export interface TaskGroup {
   belongDate: string
   ruleVersion: string
   periodCount: number
+  categoryId?: string
+  categoryName?: string
+  levelId?: string
+  levelName?: string
+  completedCount: number
+  lastExecutionTime?: number
   requiredCount: number
   startTime: number
   endTime: number
@@ -99,6 +111,7 @@ export interface Task {
   lastExecutionTime?: number
   levelName?: string
   categoryId?: string
+  categoryName?: string
   standardSnapshot: CheckItem[]
 }
 export interface Answer {
@@ -106,7 +119,16 @@ export interface Answer {
   value?: string | null
   attachmentId?: string | null
 }
+export type NetworkStatus = 'online' | 'offline'
+/** 客户端报告的采集信息；历史记录允许缺失，不回填成服务器接收时间。 */
+export interface CollectionMetadata { collectedTime?: number | null; networkStatus?: NetworkStatus | null }
 export interface Execution {
+  periodStartTime?: number
+  periodEndTime?: number
+  categoryId?: string
+  categoryName?: string
+  levelId?: string
+  levelName?: string
   taskGroupId?: string
   belongDate?: string
   periodNo?: number
@@ -116,6 +138,8 @@ export interface Execution {
   planId: string
   pointName: string
   userName: string
+  collectedTime?: number | null
+  networkStatus?: NetworkStatus | EnumValue<NetworkStatus> | null
   receiveTime: number
   remark?: string
   answers: Answer[]

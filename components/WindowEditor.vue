@@ -1,86 +1,57 @@
 <template>
-  <a-space direction="vertical" style="width: 100%">
-    <a-row v-for="(window, index) in modelValue" :key="index" :gutter="8" align="middle">
-      <a-col :span="5"
-        ><a-time-picker
-          :value="time(window.startMinute)"
-          format="HH:mm"
-          @change="setTime(index, 'startMinute', $event)"
-      /></a-col>
-      <a-col :span="5"
-        ><a-time-picker
-          :value="time(window.endMinute)"
-          format="HH:mm"
-          @change="setTime(index, 'endMinute', $event)"
-      /></a-col>
-      <a-col :span="5"
-        ><a-input-number
-          :value="window.intervalMinutes"
-          :min="1"
-          :max="1440"
-          :addon-after="t('Patrol.minutes')"
-          @update:value="patch(index, { intervalMinutes: Number($event) })"
-      /></a-col>
-      <a-col :span="5"
-        ><a-input-number
-          :value="window.requiredCount"
-          :min="1"
-          :max="100"
-          :addon-after="t('Patrol.times')"
-          @update:value="patch(index, { requiredCount: Number($event) })"
-      /></a-col>
-      <a-col :span="4"
-        ><a-button
-          danger
-          type="link"
-          @click="
-            emit(
-              'update:modelValue',
-              modelValue.filter((_, i) => i !== index)
-            )
-          "
-          >{{ t('Patrol.remove') }}</a-button
-        ></a-col
-      >
-    </a-row>
-    <a-button :disabled="modelValue.length >= 24" @click="add">{{
-      t('Patrol.addWindow')
-    }}</a-button>
-  </a-space>
+  <div class="periods">
+    <div v-for="(period, index) in modelValue" :key="index" class="period-card">
+      <div class="period-row">
+        <span class="period-index">{{ index + 1 }}</span>
+        <span class="field-label">{{ t('Patrol.ruleEditor.period') }}</span>
+        <a-input class="time-input" type="time" :aria-label="t('Patrol.startTime')" :value="period.start" @update:value="patch(index, { start: $event })" />
+        <span>{{ t('Patrol.ruleEditor.to') }}</span>
+        <a-input class="time-input" type="time" :aria-label="t('Patrol.endTime')" :value="period.end" @update:value="patch(index, { end: $event })" />
+        <span v-if="minuteOf(period.end) < minuteOf(period.start)" class="cross-day">{{ t('Patrol.ruleEditor.overnight', { end: period.end }) }}</span>
+        <span v-else-if="period.start && period.start === period.end" class="cross-day">{{ t('Patrol.ruleEditor.allDay') }}</span>
+        <a-button class="period-delete" type="link" danger @click="emit('update:modelValue', modelValue.filter((_, i) => i !== index))">{{ t('Patrol.ruleEditor.removePeriod') }}</a-button>
+      </div>
+      <div class="period-row frequency-row">
+        <span class="field-label">{{ t('Patrol.ruleEditor.frequency') }}</span><span>{{ t('Patrol.ruleEditor.every') }}</span>
+        <a-input-number :value="period.frequency ?? undefined" :min="1" :max="100" :precision="0" :controls="false" :aria-label="t('Patrol.ruleEditor.frequency')" @update:value="patch(index, { frequency: numberValue($event) })" />
+        <a-select :value="period.frequencyUnit" :options="units" :aria-label="t('Patrol.ruleEditor.frequencyUnit')" @update:value="patch(index, { frequencyUnit: $event as TimeUnit })" />
+        <span>{{ t('Patrol.ruleEditor.patrol') }}</span>
+        <a-input-number :value="period.times ?? undefined" :min="1" :max="100" :precision="0" :controls="false" :aria-label="t('Patrol.requiredCount')" @update:value="patch(index, { times: numberValue($event) })" />
+        <span>{{ t('Patrol.times') }}</span>
+        <span class="gap-label">{{ t('Patrol.ruleEditor.interval') }}</span>
+        <a-input-number :value="period.interval ?? undefined" :min="period.legacyZeroInterval && period.interval === 0 ? 0 : 1" :max="100" :precision="0" :controls="false" :aria-label="t('Patrol.cooldown')" @update:value="patch(index, { interval: numberValue($event) })" />
+        <a-select :value="period.intervalUnit" :options="units" :aria-label="t('Patrol.ruleEditor.intervalUnit')" @update:value="patch(index, { intervalUnit: $event as TimeUnit })" />
+      </div>
+    </div>
+    <a-button type="dashed" block :disabled="modelValue.length >= 24" @click="emit('update:modelValue', [...modelValue, defaultPeriod()])">+ {{ t('Patrol.addWindow') }}</a-button>
+  </div>
 </template>
 <script setup lang="ts">
-import dayjs, { type Dayjs } from 'dayjs'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  Space as ASpace,
-  Row as ARow,
-  Col as ACol,
-  TimePicker as ATimePicker,
-  InputNumber as AInputNumber,
-  Button as AButton,
-} from 'ant-design-vue'
-import type { RuleWindow } from '../api/types'
-const props = defineProps<{ modelValue: RuleWindow[] }>()
-const emit = defineEmits<{ 'update:modelValue': [windows: RuleWindow[]] }>()
+import { Input as AInput, InputNumber as AInputNumber, Select as ASelect, Button as AButton } from 'ant-design-vue'
+import { defaultPeriod, minuteOf, type PeriodDraft, type TimeUnit } from '../model/rule-editor'
+const props = defineProps<{ modelValue: PeriodDraft[] }>()
+const emit = defineEmits<{ 'update:modelValue': [windows: PeriodDraft[]] }>()
 const { t } = useI18n()
-const time = (minute: number) => dayjs().startOf('day').add(minute, 'minute')
-const patch = (index: number, value: Partial<RuleWindow>) =>
-  emit(
-    'update:modelValue',
-    props.modelValue.map((item, i) => (i === index ? { ...item, ...value } : item))
-  )
-function setTime(index: number, key: 'startMinute' | 'endMinute', value: string | Dayjs | null) {
-  if (value && typeof value !== 'string')
-    patch(index, {
-      [key]:
-        key === 'endMinute' && value.hour() === 0 && value.minute() === 0
-          ? 1440
-          : value.hour() * 60 + value.minute(),
-    })
+const units = computed(() => (['1', '2', '3'] as const).map(value => ({ value, label: t(`Patrol.ruleEditor.unit${value}`) })))
+const numberValue = (value: string | number | null) => value === null || value === '' ? null : Number(value)
+function patch(index: number, value: Partial<PeriodDraft>) {
+  emit('update:modelValue', props.modelValue.map((item, i) => i === index ? { ...item, ...value } : item))
 }
-const add = () =>
-  emit('update:modelValue', [
-    ...props.modelValue,
-    { startMinute: 480, endMinute: 1080, intervalMinutes: 60, requiredCount: 1 },
-  ])
 </script>
+<style scoped>
+.periods { display: grid; gap: 10px; }
+.period-card { padding: 12px; border: 1px solid var(--ant-color-border-secondary, #dfeafa); border-radius: 4px; background: var(--ant-color-bg-container, #fff); }
+.period-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.period-index { width: 22px; line-height: 22px; text-align: center; border-radius: 50%; color: var(--ant-color-primary, #1677ff); background: var(--ant-color-primary-bg, #eaf4ff); }
+.time-input { width: 112px; }
+.period-delete { margin-inline-start: auto; }
+.frequency-row { margin-top: 10px; padding-inline-start: 30px; }
+.frequency-row :deep(.ant-input-number) { width: 72px; }
+.frequency-row :deep(.ant-select) { width: 90px; }
+.gap-label { margin-inline-start: 18px; }
+.cross-day { color: var(--ant-color-warning, #d9901a); font-size: 12px; }
+.field-label { color: var(--ant-color-text-secondary, #606266); }
+@media (max-width: 800px) { .frequency-row { padding-inline-start: 0; } .gap-label { margin-inline-start: 0; } }
+</style>

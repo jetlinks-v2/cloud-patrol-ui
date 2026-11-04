@@ -1,7 +1,7 @@
 <template>
   <a-space direction="vertical" class="standard-item">
     <a-form-item :label="t('Patrol.itemTitle')">
-      <a-input :value="item.title" :maxlength="128" @update:value="patch({ title: $event })" />
+      <a-input :value="item.title" :maxlength="200" @update:value="patch({ title: $event })" />
     </a-form-item>
     <a-form-item :label="t('Patrol.itemType')">
       <a-select :value="itemType(item)" :options="typeOptions" @update:value="setType" />

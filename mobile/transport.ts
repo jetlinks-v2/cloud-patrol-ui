@@ -10,6 +10,8 @@ export interface PatrolHost {
   request<T>(path: string, method: 'GET' | 'POST', body?: unknown): Promise<T>
   /** 可选：H5 首页返回时交给宿主关闭 WebView；不是平台已存在的 Bridge 名称。 */
   back?(): void
+  /** 可选原生扫码契约：只返回二维码文本；取消返回 null，收到 signal 后关闭原生扫描页。 */
+  scanQrCode?(options: { signal: AbortSignal }): Promise<string | null>
 }
 declare global { interface Window { patrolHost?: PatrolHost } }
 

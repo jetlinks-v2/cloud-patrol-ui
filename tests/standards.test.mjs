@@ -32,4 +32,6 @@ test('standard validation handles typed options, invalid ranges, duplicate items
   assert.equal(standardError([{ ...legacy(), qualifiedOptions: ['unknown'] }]), 'Patrol.invalidOptions')
   assert.equal(standardError([legacy(), legacy()]), 'Patrol.duplicateItems')
   assert.equal(standardError([]), 'Patrol.standardItemsRequired')
+  assert.equal(standardError([{ ...legacy(), title: '项'.repeat(200) }]), undefined)
+  assert.equal(standardError([{ ...legacy(), title: '项'.repeat(201) }]), 'Patrol.itemTitleRequired')
 })
