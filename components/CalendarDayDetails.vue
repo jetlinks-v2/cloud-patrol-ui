@@ -11,7 +11,8 @@
     <a-tab-pane key="staff" :tab="t('Patrol.calendar.staff')">
       <a-table :columns="staffColumns" :data-source="detail.staff" row-key="id" :pagination="{ pageSize: 10 }">
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'person'">{{ record.userName || record.userId }}</template>
+          <template v-if="column.key === 'person'">{{ record.userName || '—' }}</template>
+          <template v-if="column.key === 'telephone'">{{ detail.staffTelephones?.[record.userId] || '—' }}</template>
           <template v-if="column.key === 'shift'">{{ record.shiftName || record.name }}</template>
           <template v-if="column.key === 'period'">{{ dateTime(record.startTime) }} ～ {{ dateTime(record.endTime) }}</template>
           <template v-if="column.key === 'status'">{{ t(record.rest ? 'Patrol.rest' : 'Patrol.calendar.scheduled') }}</template>
@@ -22,7 +23,7 @@
       <a-table :columns="taskColumns" :data-source="detail.tasks" row-key="id" :pagination="{ pageSize: 10 }" :scroll="{ x: 1100 }">
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'period'">{{ dateTime(record.startTime) }} ～ {{ dateTime(record.endTime) }}</template>
-          <template v-if="column.key === 'category'"><ConfigReference resource="categories" :id="record.categoryId" /></template>
+          <template v-if="column.key === 'category'">{{ record.categoryName || '—' }}</template>
           <template v-if="column.key === 'progress'">{{ record.completedCount }}/{{ record.requiredCount }}</template>
           <template v-if="column.key === 'last'">{{ dateTime(record.lastExecutionTime) }}</template>
           <template v-if="column.key === 'status'">{{ t(`Patrol.states.${taskState(record as Task)}`) }}</template>
@@ -38,17 +39,17 @@ import { Descriptions as ADescriptions, DescriptionsItem as ADescriptionsItem, T
 import type { Task } from '../api/types'
 import type { CalendarDetail } from '../api/calendar'
 import { dateTime, taskState } from '../model/display'
-import ConfigReference from './ConfigReference.vue'
 defineProps<{ detail: CalendarDetail }>()
 const { t } = useI18n()
 const staffColumns = computed(() => [
-  { title: t('Patrol.person'), key: 'person' }, { title: t('Patrol.shiftName'), key: 'shift' },
+  { title: t('Patrol.person'), key: 'person' }, { title: t('Patrol.calendar.telephone'), key: 'telephone' },
+  { title: t('Patrol.shiftName'), key: 'shift' },
   { title: t('Patrol.periodTasks'), key: 'period' }, { title: t('Patrol.state'), key: 'status' },
 ])
 const taskColumns = computed(() => [
   { title: t('Patrol.periodTasks'), key: 'period', width: 310 },
   { title: t('Patrol.point'), dataIndex: 'pointName' },
-  { title: t('Patrol.category'), dataIndex: 'categoryId', key: 'category' },
+  { title: t('Patrol.category'), dataIndex: 'categoryName', key: 'category' },
   { title: t('Patrol.level'), dataIndex: 'levelName' },
   { title: t('Patrol.post'), dataIndex: 'postName' },
   { title: t('Patrol.calendar.progress'), key: 'progress' },

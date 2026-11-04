@@ -18,7 +18,8 @@ export async function downloadPointTemplate() {
   const response = await request.get<ArrayBuffer>(`${prefix}/template`, {}, { responseType: 'arraybuffer' })
   download(response.data, '巡更点位导入模板.xlsx')
 }
-export async function exportPoints(query: Query) {
-  const response = await request.post<ArrayBuffer>(`${prefix}/export`, query, { responseType: 'arraybuffer' })
+export async function exportPoints(query: Query, categoryId?: string) {
+  const suffix = categoryId ? `?categoryId=${encodeURIComponent(categoryId)}` : ''
+  const response = await request.post<ArrayBuffer>(`${prefix}/export${suffix}`, query, { responseType: 'arraybuffer' })
   download(response.data, '巡更点位管理.xlsx')
 }

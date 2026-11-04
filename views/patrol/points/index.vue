@@ -11,10 +11,12 @@
       <a-space wrap>
         <j-permission-button has-permission="patrol/points:assign" :disabled="!selected.length" @click="openAssignments(selected, 'posts')">{{ t('Patrol.assignPosts') }}</j-permission-button>
         <j-permission-button has-permission="patrol/points:assign" :disabled="!selected.length" @click="openAssignments(selected, 'rules')">{{ t('Patrol.configureRules') }}</j-permission-button>
+        <j-permission-button has-permission="patrol/points:save" :disabled="!selected.length" @click="categoryChange = { points: selected, action: 'link' }">{{ t('Patrol.pointCategories.link') }}</j-permission-button>
+        <j-permission-button has-permission="patrol/points:save" :disabled="!selected.length" @click="categoryChange = { points: selected, action: 'cancel' }">{{ t('Patrol.pointCategories.cancel') }}</j-permission-button>
         <j-permission-button has-permission="patrol/points:posts" @click="postsOpen = true">{{ t('Patrol.managePosts') }}</j-permission-button>
         <j-permission-button has-permission="patrol/points:importRoster" @click="importOpen = true">{{ t('Patrol.importRoster') }}</j-permission-button>
         <j-permission-button has-permission="patrol/points:save" @click="pointImportOpen = true">{{ t('Patrol.pointImport.title') }}</j-permission-button>
-        <a-button :loading="exporting" @click="download(query)">{{ t('Patrol.export') }}</a-button>
+        <a-button :loading="exporting" @click="download(query, categoryId)">{{ t('Patrol.export') }}</a-button>
         <a-button @click="qr.open(query)">{{ t('Patrol.pointQr.batch') }}</a-button>
       </a-space>
     </template>
@@ -29,7 +31,8 @@
   <a-drawer v-if="postsOpen" :open="true" :width="1000" :title="t('Patrol.managePosts')" @close="postsOpen = false">
     <ConfigurationPage resource="posts" />
   </a-drawer>
-  <PointAssignmentEditor v-if="assignment" :points="assignment.points" :mode="assignment.mode" @close="assignment = undefined" @saved="assignmentSaved" />
+  <PointAssignmentEditor v-if="assignment" :points="assignment.points" :mode="assignment.mode" :category-id="categoryId" @close="assignment = undefined" @saved="assignmentSaved" />
+  <PointCategoryEditor v-if="categoryChange" :points="categoryChange.points" :action="categoryChange.action" :category-id="categoryId" @close="categoryChange = undefined" @saved="categoryChange = undefined; pointTable?.refresh()" />
   <RosterImport v-if="importOpen" @close="importOpen = false" />
   <PointImport v-if="pointImportOpen" @close="pointImportOpen = false" @saved="pointImportOpen = false; pointTable?.refresh()" />
   <PointQr v-if="qr.visible" :state="qr" @close="qr.close" @download="qr.download" @print="qr.print" />
@@ -50,6 +53,7 @@ const PointQr = defineAsyncComponent(() => import('../../../components/PointQr.v
 const qr = reactive(usePointQr())
 const PointImport = defineAsyncComponent(() => import('../../../components/PointImport.vue'))
 const PointAssignmentEditor = defineAsyncComponent(() => import('../../../components/PointAssignmentEditor.vue'))
+const PointCategoryEditor = defineAsyncComponent(() => import('../../../components/PointCategoryEditor.vue'))
 const { t } = useI18n()
 const categoryId = ref<string>()
 const { tree, loading, failed, load } = useCategories()
@@ -59,6 +63,7 @@ const pointImportOpen = ref(false)
 const { exporting, exportFailed, download } = usePointExport()
 const pointTable = ref<InstanceType<typeof ConfigurationPage>>()
 const assignment = ref<{ points: ConfigEntity[]; mode: AssignmentMode }>()
+const categoryChange = ref<{ points: ConfigEntity[]; action: 'link' | 'cancel' }>()
 function openAssignments(points: ConfigEntity[], mode: AssignmentMode) { assignment.value = { points, mode } }
 function assignmentSaved() { assignment.value = undefined; pointTable.value?.refresh() }
 </script>

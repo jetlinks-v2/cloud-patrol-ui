@@ -184,6 +184,7 @@
       "completed": "已完成"
     },
     "calendar": {
+      "telephone": "手机号",
       "staff": "人员排班",
       "staffCount": "排班人数",
       "shiftCount": "班次数",
@@ -391,6 +392,14 @@
       "unrecorded": "未记录"
     },
     "creator": "创建人",
-    "modifier": "编辑人"
+    "modifier": "编辑人",
+    "pointCategories": {
+      "link": "关联分类",
+      "cancel": "取消点位",
+      "linkHelp": "将所选点位关联到另一分类，原有分类和巡更记录保留。",
+      "cancelHelp": "仅取消所选分类下的点位关系和岗位规则，保留点位及历史巡更记录。",
+      "noCommon": "所选点位没有共同分类，请从同一分类选择点位。",
+      "choose": "请选择本次操作的点位分类。"
+    }
   }
 }

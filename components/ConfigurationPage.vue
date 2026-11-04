@@ -28,7 +28,7 @@
         ><a-button v-if="canExportConfiguration(resource)" :loading="exporting" @click="download(resource, exportQuery)">{{ t('Patrol.export') }}</a-button
         ><slot name="toolbar" :selected="selected" :query="exportQuery" /></template
       >
-      <template #category="row"><ConfigReference resource="categories" :id="row.categoryId" /></template>
+      <template #category="row"><ConfigReference resource="categories" :id="categoryId || row.categoryIds || row.categoryId" /></template>
       <template #parent="row"><ConfigReference resource="categories" :id="row.parentId" /></template>
       <template #assignedPosts="row"><ConfigReference resource="posts" :id="row.assignedPostIds" /></template>
       <template #tags="row"><ConfigReference resource="tags" :id="row.tagIds" /></template>

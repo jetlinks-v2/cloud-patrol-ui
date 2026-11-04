@@ -184,6 +184,7 @@
       "completed": "Completed"
     },
     "calendar": {
+      "telephone": "Phone",
       "staff": "Staff roster",
       "staffCount": "Scheduled staff",
       "shiftCount": "Shifts",
@@ -391,6 +392,14 @@
       "unrecorded": "Not recorded"
     },
     "creator": "Created by",
-    "modifier": "Edited by"
+    "modifier": "Edited by",
+    "pointCategories": {
+      "link": "Link category",
+      "cancel": "Remove from category",
+      "linkHelp": "Link these points to another category while keeping existing categories and patrol records.",
+      "cancelHelp": "Remove only the selected category association and its post rules. Keep the physical points and historical patrol records.",
+      "noCommon": "These points have no category in common. Select points from the same category.",
+      "choose": "Select the category for this operation."
+    }
   }
 }

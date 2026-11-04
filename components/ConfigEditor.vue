@@ -22,9 +22,10 @@
           <a-form-item name="code" :label="t('Patrol.code')" :rules="required"
             ><a-input v-model:value="model.code" :maxlength="64"
           /></a-form-item>
-          <a-form-item name="categoryId" :label="t('Patrol.category')" :rules="required"
-            ><CategorySelect v-model="model.categoryId"
+          <a-form-item v-if="!model.id" name="categoryId" :label="t('Patrol.category')" :rules="required"
+            ><CategorySelect v-model="model.categoryId" enabled-only
           /></a-form-item>
+          <a-form-item v-else :label="t('Patrol.category')"><ConfigReference resource="categories" :id="model.categoryIds || model.categoryId" /></a-form-item>
           <a-form-item :label="t('Patrol.tags')"><RemoteSelect resource="tags" v-model="model.tagIds" multiple /></a-form-item>
           <a-form-item :label="t('Patrol.location')"
             ><a-input v-model:value="model.location" :maxlength="255"
@@ -121,6 +122,7 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import ConfigReference from './ConfigReference.vue'
 import { reactive, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {

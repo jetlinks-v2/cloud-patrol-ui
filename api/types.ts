@@ -46,6 +46,7 @@ export interface ConfigEntity {
   parentId?: string
   code?: string
   categoryId?: string
+  categoryIds?: string[]
   assignedPostIds?: string[]
   tagIds?: string[]
   levelId?: string

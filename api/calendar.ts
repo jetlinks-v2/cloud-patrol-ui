@@ -15,7 +15,7 @@ export interface CalendarMonth { month: string; summary: CalendarSummary; days: 
 export interface CalendarDetail {
   date: string; staffCount: number; shiftCount: number; pointCount: number
   expectedCount: number; completedCount: number; missedCount: number
-  staff: ConfigEntity[]; tasks: Task[]
+  staff: ConfigEntity[]; tasks: Task[]; staffTelephones?: Record<string, string>
 }
 export const calendarMonth = (month: string) => request.get<CalendarMonth>('/park/patrol/calendar/month', { month })
 export const calendarDay = (date: string) => request.get<CalendarDetail>('/park/patrol/calendar/day', { date })
