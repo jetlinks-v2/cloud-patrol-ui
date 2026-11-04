@@ -1,7 +1,6 @@
-import { request as host, type Request } from '@jetlinks-web/core'
+import { request } from './request'
 import type { Query } from './types'
 export type ExportableConfig = 'levels' | 'standards' | 'tags'
-const request: Pick<Request, 'post'> = host
 const names: Record<ExportableConfig, string> = { levels: '点位等级', standards: '巡更标准', tags: '巡更标签' }
 export async function exportConfiguration(resource: ExportableConfig, query: Query) {
   const response = await request.post<ArrayBuffer>(`/park/patrol/${resource}/_export`, query, { responseType: 'arraybuffer' })

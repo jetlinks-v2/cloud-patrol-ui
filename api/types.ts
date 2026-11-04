@@ -35,6 +35,9 @@ export type ItemType = 'number' | 'text' | 'choice' | 'image'
 export type CheckResult = 'pass' | 'fail' | 'not_evaluated'
 export interface AttachmentReceipt { id: string; name: string; mediaType: string; length: number }
 export interface ConfigEntity {
+  projectId?: string
+  projectName?: string
+  ownerOrganizationId?: string
   id?: string
   name: string
   enabled: boolean
@@ -74,6 +77,8 @@ export interface ConfigEntity {
   rule?: PatrolRule
 }
 export interface TaskGroup {
+  projectId?: string
+  projectName?: string
   id: string
   planId: string
   name: string
@@ -94,6 +99,8 @@ export interface TaskGroup {
   endTime: number
 }
 export interface Task {
+  projectId?: string
+  projectName?: string
   taskGroupId?: string
   belongDate?: string
   periodNo?: number
@@ -124,6 +131,8 @@ export type NetworkStatus = 'online' | 'offline'
 /** 客户端报告的采集信息；历史记录允许缺失，不回填成服务器接收时间。 */
 export interface CollectionMetadata { collectedTime?: number | null; networkStatus?: NetworkStatus | null }
 export interface Execution {
+  projectId?: string
+  projectName?: string
   periodStartTime?: number
   periodEndTime?: number
   categoryId?: string

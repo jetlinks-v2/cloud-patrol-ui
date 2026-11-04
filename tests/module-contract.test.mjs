@@ -8,7 +8,8 @@ const root = new URL('../', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
 const menus = JSON.parse(read('baseMenu.json'))
 const flatten = nodes => nodes.flatMap(node => node.children?.length ? flatten(node.children) : [node])
-const pages = flatten(menus)
+const pages = flatten(menus.filter(menu => menu.id !== 'patrol-system'))
+const systemPages = flatten(menus.filter(menu => menu.id === 'patrol-system'))
 // 只读取物业仓库中的巡更源码，避免旧独立仓库掩盖迁移后的契约变化。
 const backend = process.env.PATROL_BACKEND_ROOT
   ? pathToFileURL(resolve(process.env.PATROL_BACKEND_ROOT) + sep)
@@ -136,10 +137,10 @@ test('menu grants expose every template asset, including the person directory us
   for (const id of ['posts', 'assign', 'importRoster']) {
     assert(point.buttons.some(button => button.id === id))
     assert(template.includes(`{id: ${id}, granted: true}`))
-    assert(read('views/patrol/points/index.vue').includes(`patrol/points:${id}`))
+    assert(read('views/patrol/points/Page.vue').includes(`patrol/points:${id}`))
   }
   assert.deepEqual(menus.map(node => node.id), [
-    'patrol-base', 'patrol-point-management', 'patrol-record-management',
+    'patrol-system', 'patrol-base', 'patrol-point-management', 'patrol-record-management',
     'patrol-statistics',
   ])
   assert(menus.every(node => node.children?.every(child => !child.children?.length)))
@@ -191,5 +192,21 @@ test('menu button translations use the JetLinks single-message string map contra
         assert.equal(typeof message, 'string', `${page.id}:${button.id} must use SingleI18nSupportEntity, not the menu translation shape`)
       }
     }
+  }
+})
+
+// 系统管理复制后保留公共后端资源，但路由和按钮使用巡更菜单命名。
+test('system management pages use patrol routes with shared property permissions', () => {
+  assert.deepEqual(systemPages.map(page => page.name), ['组织配置', '用户管理', '空间管理', '客户管理', '字典配置'])
+  const ids = new Set()
+  for (const item of [...menus, ...pages, ...systemPages]) {
+    assert(!ids.has(item.id), item.id); ids.add(item.id)
+  }
+  for (const item of systemPages) {
+    assert(item.code.startsWith('patrol/'))
+    assert(item.url.startsWith('/park/patrol/system/'))
+    assert(existsSync(new URL(`views/${item.code}/index.vue`, root)))
+    assert(template.includes(`- id: ${item.id}`))
+    assert(item.permissions.every(permission => permission.permission.startsWith('property-')))
   }
 })

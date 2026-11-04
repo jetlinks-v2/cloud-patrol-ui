@@ -1,5 +1,4 @@
-import { request as host, type Request } from '@jetlinks-web/core'
-const request: Pick<Request, 'get' | 'post'> = host
+import { request } from './request'
 import type { ConfigEntity, Task } from './types'
 export interface CalendarSummary {
   scheduledDayCount: number; totalDayCount: number; staffCount: number; rosterCount: number

@@ -37,6 +37,10 @@ http://localhost:9300/patrol-h5/?projectCode=项目入口编码&applicationScope
 
 ## 权限
 
+任务及历史页提供业务项目树筛选，保留组织层级，只能选择项目节点；清空表示全部有权项目。请求新增可选 `X-Patrol-Project`，只收窄业务范围，不替代身份/应用权限。有效员工身份、当前应用成员、岗位、排班和时段均须满足才能执行。
+
+`PatrolHost.request(path, method, body, options?)` 的可选 `options.projectId` 为本次业务项目；宿主应转成 `X-Patrol-Project`。上传使用所执行任务的项目。原 `context().projectId` 和 URL `projectCode` 仍指 SaaS 会话入口，不是业务项目，不得混用；第四参数是待 APP 团队接入的契约，不是已有原生能力。
+
 `baseMenu.json` 在现有“巡更记录”菜单中增加 `mobile`（手机巡更）授权项，不增加 PC 业务菜单。部署模板 `authentication-patrol-application.yml` 对应声明该项：
 
 | 用途 | 功能权限 |
@@ -84,3 +88,5 @@ POST /park/patrol/mobile/history/_query  标准 QueryParamEntity
 本地构建和隔离的 UI 测试不能替代真实项目会话与 APP 真机验收。
 
 浏览器扫码要求 HTTPS（localhost 开发安全上下文除外）及相机授权；切后台、返回、重试或卸载停止镜头，晚到的授权也会释放。相机权限等待期间可返回取消；拒绝、不可用或无匹配任务均有提示。新增解码测试使用实际 PC 下载二维码的像素样本，覆盖旋转/反色及多岗位匹配，但不代表 iOS/WKWebView、Android WebView 的真机镜头与原生扫码适配已验收。
+
+本地 `.dev/mobile-fixture.html` 为隔离的测试数据预览入口，使用测试宿主，不请求真实业务后端。支持项目树、项目任务筛选、分类/等级选项、检查表单、响应丢失重试、记录及漏检空态；不作为真实授权、附件上传、现场扫码或漏检业务验收证据。

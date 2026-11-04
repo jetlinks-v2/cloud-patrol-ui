@@ -1,4 +1,7 @@
-<template><StatisticsPage  /></template>
+<template>
+  <ProjectWorkspace><PatrolPage /></ProjectWorkspace>
+</template>
 <script setup lang="ts">
-import StatisticsPage from '../../../components/StatisticsPage.vue'
+import ProjectWorkspace from '../../../components/ProjectWorkspace.vue'
+import PatrolPage from './Page.vue'
 </script>

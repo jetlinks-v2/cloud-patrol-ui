@@ -6,4 +6,4 @@ import zhPatrol from '../locales/lang/zh.json'
 import enPatrol from '../locales/lang/en.json'
 import 'ant-design-vue/dist/reset.css'
 import './style.css'
-createApp(App).use(createI18n({ legacy: false, locale: 'zh', fallbackLocale: 'en', messages: { zh: { Mobile: zh, Patrol: { missed: zhPatrol.Patrol.missed } }, en: { Mobile: en, Patrol: { missed: enPatrol.Patrol.missed } } } })).mount('#app')
+createApp(App).use(createI18n({ legacy: false, locale: 'zh', fallbackLocale: 'en', messages: { zh: { Mobile: zh, Patrol: { missed: zhPatrol.Patrol.missed, projects: zhPatrol.Patrol.projects } }, en: { Mobile: en, Patrol: { missed: enPatrol.Patrol.missed, projects: enPatrol.Patrol.projects } } } })).mount('#app')

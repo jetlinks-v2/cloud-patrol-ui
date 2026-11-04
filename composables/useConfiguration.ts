@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { onlyMessage } from '@jetlinks-web/utils'
 import { queryConfig, saveConfig } from '../api/patrol'
 import { getPointAssignments, getPointAssignmentSummary } from '../api/assignments'
+import { selectedProject } from './useProjects'
 import { draftOf } from '../model/resources'
 import type { ConfigEntity, Resource, Query, Term } from '../api/types'
 /** 页面编排只维护编辑副本和筛选；列表分页、loading、空态由宿主 ProTable 负责。 */
@@ -29,6 +30,7 @@ export function useConfiguration(resource: Resource, point?: ConfigEntity, categ
   }
   const edit = (source?: ConfigEntity) => {
     draft.value = draftOf(resource, source)
+    if (!source) draft.value.projectId = selectedProject()
     if (resource === 'points' && !source && categoryId?.value) draft.value.categoryId = categoryId.value
     if (point?.id) {
       draft.value.pointId = point.id

@@ -1,5 +1,4 @@
-import { request as host, type Request } from '@jetlinks-web/core'
-const request: Pick<Request, 'get' | 'post'> = host
+import { request } from './request'
 import type { MissedItem, MissedEvent } from '../model/missed'
 import { missedDecisions } from '../model/missed'
 const prefix = '/park/patrol/missed'

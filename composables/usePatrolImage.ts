@@ -1,8 +1,9 @@
-import { ref, onScopeDispose } from 'vue'
+import { ref, onScopeDispose, inject, type Ref } from 'vue'
 import { uploadImage, previewImage } from '../api/patrol'
 
 /** 请求和竞态留在编排层；保存的是受控附件 ID，不保存带凭证的临时 URL。 */
 export function usePatrolImage(onUploaded: (id: string) => void) {
+  const owner = inject<Ref<string | undefined> | undefined>('patrolAttachmentOwner', undefined)
   const uploading = ref(false), loading = ref(false), failed = ref(false), dataUrl = ref('')
   let requestVersion = 0, disposed = false
   onScopeDispose(() => { disposed = true; requestVersion++ })
@@ -11,7 +12,7 @@ export function usePatrolImage(onUploaded: (id: string) => void) {
     uploading.value = true
     failed.value = false
     try {
-      const response = await uploadImage(file)
+      const response = await uploadImage(file, 'example', owner?.value)
       if (disposed || version !== requestVersion) return
       if (!response.success) { failed.value = true; return }
       dataUrl.value = ''

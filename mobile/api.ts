@@ -15,9 +15,9 @@ export async function configurationOptions(resource: 'categories' | 'levels'): P
 }
 export const myHistory = (query: Query) => request<Page<Execution>>('/park/patrol/mobile/history/_query', 'POST', query)
 export const submit = (body: Submission) => request<Execution>('/park/patrol/executions', 'POST', body)
-export const upload = (file: File) => {
+export const upload = (file: File, projectId?: string) => {
   const body = new FormData(); body.append('file', file)
-  return request<AttachmentReceipt>('/park/patrol/attachments/evidence', 'POST', body)
+  return request<AttachmentReceipt>('/park/patrol/attachments/evidence', 'POST', body, projectId)
 }
 export const preview = (id: string) => request<{ dataUrl: string }>(`/park/patrol/attachments/${encodeURIComponent(id)}/preview`, 'GET')
 

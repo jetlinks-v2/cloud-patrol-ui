@@ -1,5 +1,4 @@
-import { request as host, type Request } from '@jetlinks-web/core'
-const request: Pick<Request, 'get' | 'post'> = host
+import { request } from './request'
 export interface StatisticsRow {
   id: string; name: string; pointCount: number; taskCount: number; completedTasks: number
   expected: number; completed: number; missing: number; coverage: number; qualification: number

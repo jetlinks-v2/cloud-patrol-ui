@@ -23,6 +23,8 @@
         ><j-permission-button
           type="primary"
           :has-permission="savePermission(resource)"
+          :disabled="['points', 'posts'].includes(resource) && !projectSelection"
+          :title="['points', 'posts'].includes(resource) && !projectSelection ? t('Patrol.projects.chooseBeforeCreate') : undefined"
           @click="openEditor()"
           >{{ t('Patrol.add') }}</j-permission-button
         ><a-button v-if="canExportConfiguration(resource)" :loading="exporting" @click="download(resource, exportQuery)">{{ t('Patrol.export') }}</a-button
@@ -74,6 +76,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import { patrolOptionSource } from '../composables/usePatrolOptionSource'
+import { useProjects } from '../composables/useProjects'
 import ConfigReference from './ConfigReference.vue'
 import RuleSummary from './RuleSummary.vue'
 import { dateTime } from '../model/display'
@@ -83,7 +87,6 @@ import { Alert as AAlert, Button as AButton, Tag as ATag } from 'ant-design-vue'
 import ConditionFilter, {
   type ConditionFilterChangePayload,
   type ConditionFilterField,
-  createQueryNoPagingOptionSource,
 } from '@jetlinks-web-core/components/ConditionFilter'
 import { useConfiguration } from '../composables/useConfiguration'
 import { canDeleteConfiguration } from '../api/config-delete'
@@ -98,6 +101,7 @@ const historyId = ref<string>()
 const readonly = ref(false)
 const props = defineProps<{ resource: Resource; point?: ConfigEntity; categoryId?: string; categoriesInSidebar?: boolean; selectable?: boolean }>()
 const { t } = useI18n()
+const { selected: projectSelection } = useProjects()
 const { exporting, exportFailed, download } = useConfigExport()
 const { saveFailed, visible, saving, draft, params, terms, load, edit, save, reload } = useConfiguration(
   props.resource, props.point, toRef(props, 'categoryId')
@@ -118,12 +122,7 @@ function openEditor(row?: ConfigEntity, readOnly = false) {
   edit(row)
 }
 // 仅传递加载函数。不要将候选缓存 Ref 放进字段定义，候选变化会触发宿主深度监听重置编辑中的条件。
-const referenceOptions = (resource: 'categories' | 'tags' | 'posts') => {
-  const { loadOptions, loadSelectedOptions } = createQueryNoPagingOptionSource({
-    url: `/park/patrol/${resource}/_query`, queryMode: 'paging', sorts: [{ name: 'name', order: 'asc' }],
-  })
-  return { loadOptions, loadSelectedOptions }
-}
+const referenceOptions = patrolOptionSource
 const categoryOptions = referenceOptions('categories'), tagOptions = referenceOptions('tags'), postOptions = referenceOptions('posts')
 const fields = computed<ConditionFilterField[]>(() => {
   const categoryField: ConditionFilterField = { title: t('Patrol.category'), dataIndex: 'categoryId', search: { type: 'select', defaultTermType: 'in', termTypeOptions: ['in', 'nin'], optionPanel: { ...categoryOptions, multiple: true, optionFields: { value: 'id', label: 'name' } } } }
@@ -146,6 +145,7 @@ const fields = computed<ConditionFilterField[]>(() => {
   ]
 })
 const columns = computed(() => [
+  { title: t('Patrol.projects.label'), dataIndex: 'projectName', key: 'projectName', width: 160, ellipsis: true },
   { title: t(`Patrol.names.${props.resource}`), dataIndex: 'name', key: 'name', ellipsis: true, width: 180 },
   ...(props.resource === 'points'
     ? [

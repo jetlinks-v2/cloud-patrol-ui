@@ -8,6 +8,12 @@
     <a-alert v-if="saveFailed" type="error" show-icon :message="t('Patrol.saveFailed')" style="margin-bottom: 16px" />
     <a-config-provider :component-disabled="readonly || imageBusy">
       <a-form ref="form" :model="model" layout="vertical" :disabled="readonly || imageBusy">
+        <a-form-item :label="t('Patrol.projects.label')">
+          <ProjectTreeSelect v-model="model.projectId" disabled />
+        </a-form-item>
+        <a-form-item v-if="!model.projectId && !['points', 'posts', 'plans', 'rosters'].includes(resource)" name="ownerOrganizationId" :label="t('Patrol.projects.owner')" :rules="required">
+          <ProjectTreeSelect v-model="model.ownerOrganizationId" :projects-only="false" :disabled="!!model.id" />
+        </a-form-item>
         <a-form-item
           name="name"
           :label="t(`Patrol.names.${resource}`)"
@@ -122,8 +128,9 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import ProjectTreeSelect from './ProjectTreeSelect.vue'
 import ConfigReference from './ConfigReference.vue'
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, provide } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   ConfigProvider as AConfigProvider,
@@ -165,6 +172,7 @@ const { t } = useI18n()
 const nameMaxLength = computed(() => ['standards', 'warnings'].includes(props.resource) ? 30 : 128)
 const model = reactive(draftOf(props.resource, props.value)),
   form = ref<FormInstance>()
+provide('patrolAttachmentOwner', computed(() => model.ownerOrganizationId))
 const imageBusy = ref(false)
 const ruleEditor = ref<InstanceType<typeof RuleEditor>>()
 const ruleRules = [{ validator: async () => {

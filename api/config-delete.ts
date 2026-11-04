@@ -1,6 +1,5 @@
-import { request as host, type Request } from '@jetlinks-web/core'
+import { request } from './request'
 import type { Resource } from './types'
-const request: Pick<Request, 'remove'> = host
 export type RemovableConfig = 'levels' | 'standards' | 'warnings'
 export const canDeleteConfiguration = (resource: Resource): resource is RemovableConfig =>
   resource === 'levels' || resource === 'standards' || resource === 'warnings'

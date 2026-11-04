@@ -1,6 +1,5 @@
-import { request as host, type Request } from '@jetlinks-web/core'
+import { request } from './request'
 import type { ConfigEntity, Resource, Query, Page, Task, TaskGroup, Execution, Person, Answer, AttachmentReceipt, CollectionMetadata } from './types'
-const request: Pick<Request, 'get' | 'post' | 'put'> = host
 const prefix = '/park/patrol'
 // 保留宿主响应用于 ProTable；普通动作只解包 result，不再重复触发全局错误提示。
 export const queryConfig = (resource: Resource, query: Query) =>
@@ -50,10 +49,10 @@ export interface Summary {
 export const reportSummary = (from: string, to: string) =>
   request.post<Summary>(`${prefix}/reports/summary`, { from, to })
 
-export const uploadImage = (file: File, purpose: 'example' | 'evidence' = 'example') => {
+export const uploadImage = (file: File, purpose: 'example' | 'evidence' = 'example', ownerOrganizationId?: string) => {
   const body = new FormData()
   body.append('file', file)
-  return request.post<AttachmentReceipt>(`${prefix}/attachments/${purpose}`, body)
+  return request.post<AttachmentReceipt>(`${prefix}/attachments/${purpose}`, body, ownerOrganizationId ? { headers: { 'X-Patrol-Owner': ownerOrganizationId } } : undefined)
 }
 export const previewImage = (id: string) =>
   request.get<{ dataUrl: string }>(`${prefix}/attachments/${encodeURIComponent(id)}/preview`)

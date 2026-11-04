@@ -1,3 +1,4 @@
+import { patrolProject } from './projectScope'
 import { LocalStore } from '@jetlinks-web/utils'
 import { TOKEN_KEY } from '@jetlinks-web/constants'
 
@@ -7,7 +8,7 @@ export interface MobileContext { userId: string; projectId?: string; application
 /** APP 尚未提供正式 Bridge。接入方实现此受限传输契约，页面业务无需依赖原生全局对象。 */
 export interface PatrolHost {
   context(): Promise<MobileContext>
-  request<T>(path: string, method: 'GET' | 'POST', body?: unknown): Promise<T>
+  request<T>(path: string, method: 'GET' | 'POST', body?: unknown, options?: { projectId?: string }): Promise<T>
   /** 可选：H5 首页返回时交给宿主关闭 WebView；不是平台已存在的 Bridge 名称。 */
   back?(): void
   /** 可选原生扫码契约：只返回二维码文本；取消返回 null，收到 signal 后关闭原生扫描页。 */
@@ -24,13 +25,14 @@ function browserSession() {
     LocalStore.get(TOKEN_KEY), location.origin)
 }
 let identity = ''
-async function browserRequest<T>(path: string, method: 'GET' | 'POST', body?: unknown): Promise<T> {
+async function browserRequest<T>(path: string, method: 'GET' | 'POST', body?: unknown, options?: { projectId?: string }): Promise<T> {
   const session = browserSession()
   const current = JSON.stringify([projectCode, applicationId, session.project.id, session.project.domain, session.token])
   if (identity && identity !== current) throw new MobileError(401, 'Mobile.contextChanged')
   identity = current
   const headers: Record<string, string> = { [TOKEN_KEY]: session.token,
     'X-Asset-Scope': `business_application:${applicationId}` }
+  if (options?.projectId) headers['X-Patrol-Project'] = options.projectId
   if (session.domain) headers['X-Tenant-Domain'] = session.domain
   if (body !== undefined && !(body instanceof FormData)) headers['Content-Type'] = 'application/json'
   // 部分 APP WebView 没有 AbortSignal.timeout，使用兼容的 AbortController。
@@ -65,9 +67,9 @@ export async function resolveContext(): Promise<MobileContext> {
   return context
 }
 /** 仅允许巡更相对路径；写请求不做自动重试。 */
-export async function request<T>(path: string, method: 'GET' | 'POST' = 'POST', body?: unknown): Promise<T> {
+export async function request<T>(path: string, method: 'GET' | 'POST' = 'POST', body?: unknown, projectId: string | undefined = patrolProject.value): Promise<T> {
   if (!path.startsWith('/park/patrol/') || path.includes('..') || path.includes('://'))
     return Promise.reject(new MobileError(400, 'Mobile.requestFailed'))
   await resolveContext()
-  return host.request<T>(path, method, body)
+  return host.request<T>(path, method, body, { projectId })
 }

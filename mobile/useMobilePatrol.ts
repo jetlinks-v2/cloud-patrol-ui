@@ -64,12 +64,14 @@ export function useMobilePatrol() {
     } catch (cause) { if (!disposed && current === version) fail(cause) }
     finally { if (!disposed && current === version) loading.value = false }
   }
+  let optionVersion = 0
   async function loadHistoryOptions() {
+    const current = ++optionVersion
     filterError.value = false
     try {
       const [categoryRows, levelRows] = await Promise.all([api.configurationOptions('categories'), api.configurationOptions('levels')])
-      if (!disposed) { categories.value = categoryRows; levels.value = levelRows }
-    } catch { if (!disposed) filterError.value = true }
+      if (!disposed && current === optionVersion) { categories.value = categoryRows; levels.value = levelRows }
+    } catch { if (!disposed && current === optionVersion) filterError.value = true }
   }
   async function scanPoint(raw: string): Promise<MobileTask[]> {
     if (locked.value) throw new Error('Mobile.submitUncertain')
@@ -109,7 +111,7 @@ export function useMobilePatrol() {
     if (!imageAllowed(file)) { errors.value[id] = 'Mobile.invalidImage'; return }
     uploading.value = true; error.value = ''
     try {
-      const receipt = await api.upload(file)
+      const receipt = await api.upload(file, selected.value?.task.projectId)
       const answer = draft.value.answers.find(item => item.itemId === id)
       if (answer) answer.attachmentId = receipt.id
       delete errors.value[id]

@@ -2,6 +2,36 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { answerErrors, submissionFor, newRequestId, imageAllowed } from '../mobile/model.ts'
 import { pendingStore } from '../mobile/pending.ts'
+import { build } from 'esbuild'
+import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
+
+test('H5实际入口为项目选择和加载失败注册中英文文案', async () => {
+  const result = await build({
+    entryPoints: [fileURLToPath(new URL('../mobile/main.ts', import.meta.url))],
+    bundle: true, write: false, platform: 'node', format: 'cjs',
+    external: ['vue', 'vue-i18n'],
+    plugins: [{ name: 'entry-shell', setup(builder) {
+      builder.onResolve({ filter: /\.vue$|\.css$/ }, args => ({ path: args.path, namespace: 'entry-shell' }))
+      builder.onLoad({ filter: /.*/, namespace: 'entry-shell' }, () => ({ contents: 'export default {}' }))
+    }}]
+  })
+  const module = { exports: {} }
+  const require = createRequire(import.meta.url)
+  let i18n
+  const entryRequire = name => name === 'vue'
+    ? { createApp: () => ({ use(value) { i18n = value; return this }, mount() {} }) }
+    : require(name)
+  new Function('require', 'module', 'exports', result.outputFiles[0].text)(entryRequire, module, module.exports)
+  for (const locale of ['zh', 'en']) {
+    i18n.global.locale.value = locale
+    for (const key of ['Patrol.projects.all', 'Patrol.projects.failed', 'Patrol.missed.title']) {
+      assert.equal(i18n.global.te(key), true, `${locale}: ${key}`)
+      assert.notEqual(i18n.global.t(key), key)
+    }
+  }
+  assert.equal(i18n.global.t('Patrol.projects.all', {}, { locale: 'zh' }), '全部有权限的项目')
+})
 const choice = { id: 'lock', title: 'Lock', required: true, options: ['normal', 'abnormal'] }
 const number = { id: 'pressure', title: 'Pressure', type: { value: 'number', text: 'Number' }, required: true, options: [] }
 const image = { id: 'image', title: 'Image', type: 'image', required: true, options: [] }

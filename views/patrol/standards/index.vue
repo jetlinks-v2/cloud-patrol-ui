@@ -1,4 +1,7 @@
-<template><ConfigurationPage resource="standards" /></template>
+<template>
+  <ProjectWorkspace><PatrolPage /></ProjectWorkspace>
+</template>
 <script setup lang="ts">
-import ConfigurationPage from '../../../components/ConfigurationPage.vue'
+import ProjectWorkspace from '../../../components/ProjectWorkspace.vue'
+import PatrolPage from './Page.vue'
 </script>

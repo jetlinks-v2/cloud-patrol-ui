@@ -7,6 +7,8 @@ import { enumValue } from '../model/standards'
 import CheckForm from './components/CheckForm.vue'
 import RecordDetails from './components/RecordDetails.vue'
 import PointGrid from './components/PointGrid.vue'
+import MobileProjectFilter from './components/MobileProjectFilter.vue'
+import { patrolProject } from './projectScope'
 import MobileMissed from './components/MobileMissed.vue'
 import { pointGroups, type PointGroup } from './points'
 import { useMobilePatrol } from './useMobilePatrol'
@@ -50,7 +52,15 @@ function resume() {
   else void load()
 }
 watch([date, tab, mine], () => { if (!selected.value && !record.value) void load() })
-watch(tab, value => { if (value === 'history') void loadHistoryOptions() })
+watch([tab, patrolProject], ([value]) => { if (value === 'history') void loadHistoryOptions() })
+// 切项目清除关联筛选与旧列表，再发一次查询，避免旧项目结果或筛选残留。
+watch(patrolProject, () => {
+  historyFilters.value.categoryId = ''; historyFilters.value.levelId = ''
+  rows.value = []; records.value = []; total.value = 0
+  if (selected.value || record.value) return
+  if (tab.value === 'history') searchHistory()
+  else void load()
+})
 onMounted(() => {
   void load(); window.addEventListener('beforeunload', beforeUnload)
   document.addEventListener('visibilitychange', resume); window.addEventListener('pageshow', resume)
@@ -70,6 +80,7 @@ onUnmounted(() => {
         <button v-if="!detail && tab === 'tasks'" type="button" class="header-action" @click="tab = 'history'">{{ t('Mobile.recordsEntry') }}</button>
       </header>
       <main :class="{ 'has-submit': selected, 'points-home': !detail && tab === 'tasks' }">
+        <MobileProjectFilter v-if="!detail" :disabled="locked || loading" />
         <Alert v-if="error" class="notice" type="error" show-icon :message="te(error) ? t(error) : error" />
         <ScanPage v-if="scanOpen" :resolve="scanPoint" @select="open($event); scanOpen = false" />
         <MobileMissed v-else-if="missedOpen" @busy="missedBusy = $event" />

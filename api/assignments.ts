@@ -1,5 +1,4 @@
-import { request as host, type Request } from '@jetlinks-web/core'
-const request: Pick<Request, 'post'> = host
+import { request } from './request'
 import type { ConfigEntity } from './types'
 export interface PointAssignments { pointId: string; categoryId?: string; assignments: ConfigEntity[] }
 export interface PostRule { postId: string; levelId?: string; standardId?: string }

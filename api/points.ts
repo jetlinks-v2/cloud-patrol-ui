@@ -1,6 +1,5 @@
-import { request as host, type Request } from '@jetlinks-web/core'
+import { request } from './request'
 import type { Query } from './types'
-const request: Pick<Request, 'get' | 'post'> = host
 const prefix = '/park/patrol/points/workbook'
 export interface PointImportRow {
   rowNumber: number; categoryId: string; categoryName: string; name: string; location: string; errors: string[]

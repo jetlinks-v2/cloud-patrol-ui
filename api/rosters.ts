@@ -1,5 +1,4 @@
-import { request as host, type Request } from '@jetlinks-web/core'
-const request: Pick<Request, 'get' | 'post'> = host
+import { request } from './request'
 export async function downloadRosterTemplate(month: string) {
   const response = await request.get<ArrayBuffer>('/park/patrol/rosters/month/template', { month }, { responseType: 'arraybuffer' })
   const url = URL.createObjectURL(new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
