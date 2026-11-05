@@ -7,6 +7,7 @@ import { savePermission, resources } from '../model/resources.ts'
 const root = new URL('../', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
 const menus = JSON.parse(read('baseMenu.json'))
+const groups = menus[0].children
 const flatten = nodes => nodes.flatMap(node => node.children?.length ? flatten(node.children) : [node])
 const pages = flatten(menus.filter(menu => menu.id !== 'patrol-system'))
 const systemPages = flatten(menus.filter(menu => menu.id === 'patrol-system'))
@@ -141,13 +142,17 @@ test('menu grants expose every template asset, including the person directory us
     assert(template.includes(`{id: ${id}, granted: true}`))
     assert(read('views/patrol/points/Page.vue').includes(`patrol/points:${id}`))
   }
-  assert.deepEqual(menus.map(node => node.id), [
+  assert.equal(menus.length, 1)
+  assert.equal(menus[0].id, 'cloud-patrol')
+  assert.equal(menus[0].name, '智能巡更')
+  assert(template.includes('- id: cloud-patrol\n'))
+  assert.deepEqual(groups.map(node => node.id), [
     'patrol-base', 'patrol-point-management', 'patrol-record-management',
     'patrol-statistics',
   ])
-  assert(menus.every(node => node.children?.every(child => !child.children?.length)))
-  assert(menus.find(node => node.id === 'patrol-point-management').children.some(node => node.id === 'patrol-calendar'))
-  assert.deepEqual(menus.find(node => node.id === 'patrol-statistics').children.map(node => node.id), ['patrol-coverage'])
+  assert(groups.every(node => node.children?.every(child => !child.children?.length)))
+  assert(groups.find(node => node.id === 'patrol-point-management').children.some(node => node.id === 'patrol-calendar'))
+  assert.deepEqual(groups.find(node => node.id === 'patrol-statistics').children.map(node => node.id), ['patrol-coverage'])
   assert.equal(pages.find(node => node.id === 'patrol-coverage').name, '巡更总览')
  })
 

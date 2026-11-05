@@ -16,6 +16,8 @@ async function load(path, globs = {}) {
   const result = await build({ entryPoints: [path], bundle: true, write: false, platform: 'node', format: 'cjs', plugins: [{
     name: 'runtime', setup(builder) {
       builder.onResolve({ filter: /^@jetlinks-web\/utils$/ }, () => ({path: resolve(host, 'node_modules/@jetlinks-web/utils/src/config.ts')}))
+      builder.onResolve({ filter: /^@property-base-ui\/baseMenu$/ }, () => ({path: resolve(sharedRoot, 'baseMenu.ts')}))
+      builder.onResolve({ filter: /^@jetlinks-web-core\/utils\/application-scope$/ }, () => ({path: resolve(host, 'jetlinks-web-core/src/utils/application-scope.ts')}))
       builder.onResolve({ filter: /^@jetlinks-web-core\/utils\/module-registry$|^@jetlinks-web\/core$|\.vue$/ }, ({path}) => ({path, namespace: 'browser'}))
       builder.onLoad({ filter: /.*/, namespace: 'browser' }, ({path}) => ({contents: path.endsWith('.vue') ? 'export default {}' : path.includes('module-registry') ? 'export const moduleRegistry = globalThis.__baseRegistry' : 'export const request = globalThis.__baseRequest'}))
       builder.onLoad({ filter: /(?:index|modules)\.ts$/ }, ({path}) => ({contents: readFileSync(path, 'utf8').replaceAll('import.meta.glob', 'globalThis.__baseGlob'), loader: 'ts', resolveDir: dirname(path)}))
@@ -53,7 +55,24 @@ test('公共模块唯一提供基础菜单和路由，业务不再注册基础�
     assert.equal(businessRoutes[menu.code], undefined)
     assert.ok(readFileSync(await routes[menu.code](), 'utf8').includes('<template>'))
   }
-  assert(!flatten(menus).some(menu => ['decoration-basic', 'patrol-system'].includes(menu.id)))
+  assert(!flatten(menus).some(menu => menu.id === 'decoration-basic'))
+  const patrolRoot = menus.find(menu => menu.code === 'cloud-patrol')
+  assert.deepEqual(patrolRoot.children.map(menu => menu.id), [
+    'patrol-base', 'patrol-point-management', 'patrol-record-management', 'patrol-statistics', 'patrol-system',
+  ])
+  const system = patrolRoot.children.at(-1)
+  assert.equal(system.name, '系统管理')
+  assert.equal(system.children.length, basics[0].children.length)
+  for (const [index, page] of system.children.entries()) {
+    const sharedPage = basics[0].children[index]
+    assert.equal(page.id, sharedPage.id.replace(/^charging-/, 'patrol-'))
+    assert.equal(page.options.meta.componentCode, sharedPage.code)
+    assert.deepEqual(page.permissions, sharedPage.permissions)
+    assert.deepEqual(page.buttons, sharedPage.buttons)
+  }
+  const navigation = business.default.getMenuFilters()[0].filter([patrolRoot], {applicationScope: 'test-app'})
+  assert.equal(navigation.at(-1).code, 'charging/basic')
+  for (const page of navigation.at(-1).children) assert.equal(typeof routes[page.code], 'function')
   modules.registerModule()
   const name = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')).name
   assert.deepEqual(resources.get(name), {apis: {}, components: {}})

@@ -45,7 +45,9 @@ pnpm exec vue-tsc -p modules/cloud-patrol-ui/tsconfig.json --noEmit
 node --test modules/cloud-patrol-ui/tests/*.test.mjs
 ```
 
-`baseMenu` 直接以四个巡更业务分组为一级菜单，页面为二级菜单，不再套“智能巡更”根节点；应用名称仍为智能巡更。宿主现有布局在左侧显示分组，在右侧页签显示组内页面。所有菜单均为 `owner: app`，`options.appName` 为 `cloud-patrol`。业务页面显式声明 `accessSupport: support` 和 `assetTypes`，点位菜单同时声明角色、计划、排班、等级、标准及 `user`，使模板编辑器能够配置人员查询的数据范围；巡更配置资产使用 `SELECT_AND_BIND`，应用角色和人员使用 `SELECT`。按菜单管理流程增量导入，不全量初始化覆盖其他业务菜单。已有环境应先提升业务分组及其子节点的层级，再移除旧根节点，避免递归删除下级菜单。模板及项目应用创建步骤见后端 `deploy/patrol/authentication-patrol-application.yml` 和 README。源码菜单不是自动授权，已持久化的菜单或模板也不会只因改源码自动更新。
+菜单权限树保留“智能巡更”根节点，依次包含巡更基础管理、巡更点管理、巡更记录、巡更统计、系统管理。业务菜单定义位于 `baseMenu.json`；`baseMenu.ts` 复用公共 `property-base-ui/baseMenu` 出口生成系统管理的巡更授权别名，保留 `patrol-system`、`patrol-User` 等既有 ID，不复制基础页面或改公共模块全局父级。独立应用通过 `getMenuFilters` 展开智能巡更一层，左侧直接显示上述五个分组，系统管理排最后；项目上下文和授权编辑树不展开。公共页面的已授权节点在应用运行时映射到 `charging/*` 路由，权限仍取服务端返回的按钮和资产范围，不凭源码补授权。
+
+所有巡更定义均为 `owner: app`、`options.appName: cloud-patrol`。业务页面继续声明 `accessSupport: support` 和原 `assetTypes`；菜单 ID、按钮及功能权限不随展示层级变化。已有环境不能仅靠代码热更新改变持久化父级：使用 `scripts/migrate-menu-root.mjs --api <认证网关地址> --backup <备份目录>` 预览，令牌通过环境变量 `PATROL_MENU_TOKEN` 提供；确认预览后增加 `--apply`。脚本只增量恢复根节点及移动五个分组，并核验其余定义未变，不调用全量初始化、不修改角色、模板或资产策略。现有用户已授权的子菜单由平台自动补齐祖先；需实测当前应用权限树。认证模板同步保留根节点，系统管理不自动补授既有角色。部署步骤见后端 `deploy/patrol/authentication-patrol-application.yml`。
 
 图片通过巡更附件 API 复用平台文件服务，只保存业务附件 ID；每题最多一张，支持 JPEG/PNG/WebP、最大5MB，错误时保留原附件以便重试。标准/记录菜单声明 `patrolAttachment` 与 `patrol-attachment:query`，标准保存动作另含 `patrol-attachment:save`；CloudPatrol 模板同步新增附件资产 `SELECT_AND_BIND`。已存在环境须增量更新菜单、模板、订阅和应用授权，重启不会自动补齐。PC 上传不能证明现场拍摄，APP 相机/水印和真机验收仍属后续范围。
 
