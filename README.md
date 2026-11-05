@@ -8,7 +8,7 @@ Vue3/TypeScript 的 JetLinks **runtime-ui 应用模块**，不是单独登录的
 
 所有巡更页面共用项目工具条，组织树来自基础数据已过滤的权限树，只有 project 节点可选，其他节点置灰但可展开；清空表示全部有权项目。项目选择通过 `X-Patrol-Project` 收窄列表、候选、导出和统计，切换时清空旧选择与编辑弹窗。点位/岗位及导入须先选项目；共享配置可指定维护组织。历史未归属数据由有权人员通过工具条显式归属，不自动分配第一个项目。岗位人员候选使用有效员工、SaaS应用成员、人员资产及项目组织范围交集；管理员不因管理范围获得打卡资格。
 
-- 系统管理直接复用财务系统的组织配置、用户管理、空间管理、客户管理和字典配置页面及交互；前端菜单使用巡更标识，后端统一调用 `/property/**`，共享物业基础数据和原有 `property-*` 权限，不建立巡更副本。
+- 组织配置、用户管理、空间管理、客户管理和字典配置由 `property-base-ui` 统一提供，与收费使用同一份菜单和页面。本模块不注册基础菜单、页面或 API 副本；公共菜单沿用 `charging/*` 编码及 `property-*` 权限。
 - 基础管理包含点位等级、巡更标准、分类和异常预警配置；不提供标签管理菜单或维护入口，已有点位标签数据保留。等级、标准和预警的停用与逻辑删除分离，引用中的等级/标准禁止删除；底层与历史数据保留。等级提供操作前后快照的修改记录。
 - 点位管理提供岗位成员维护、逐点位的岗位/等级/标准指派及月排班模板下载、导入。内部计划不设独立菜单，编辑保留指派 ID。
 - 执行记录区分客户端采集时间、采集网络状态与服务器接收时间；PC支持对应展示/筛选，H5详情展示，历史缺失显示未记录。采集信息不能替代服务端在线资格校验，离线补传另行实现。
@@ -29,7 +29,7 @@ Vue3/TypeScript 的 JetLinks **runtime-ui 应用模块**，不是单独登录的
 - `model/`：资源权限映射、编辑副本、枚举提交值、时间和状态规则。
 - `composables/`：请求与页面状态编排。
 - `components/`：配置编辑、标准/频次编辑、远程选择器等复用组件。
-- `views/patrol/`：10 个巡更业务页面和5个系统管理页面。
+- `views/patrol/`：10 个巡更业务页面；基础页面由公共模块提供。
 - `index.ts`、`baseMenu.ts/json`、`locales/lang/`：宿主模块、菜单与双语注册入口。
 
 ## 接入 runtime-ui
@@ -40,12 +40,12 @@ Vue3/TypeScript 的 JetLinks **runtime-ui 应用模块**，不是单独登录的
 
 ```bash
 # 在 runtime-ui 根目录，使用其约定的 pnpm 版本。
-pnpm --filter jetlinks-web-core build -- --module-name cloud-patrol-ui,authentication-manager-ui
+pnpm --filter jetlinks-web-core build -- --module-name cloud-patrol-ui,property-base-ui,authentication-manager-ui
 pnpm exec vue-tsc -p modules/cloud-patrol-ui/tsconfig.json --noEmit
 node --test modules/cloud-patrol-ui/tests/*.test.mjs
 ```
 
-`baseMenu` 直接以系统管理和四个巡更业务分组为一级菜单，页面为二级菜单，不再套“智能巡更”根节点；应用名称仍为智能巡更。宿主现有布局在左侧显示分组，在右侧页签显示组内页面。所有菜单均为 `owner: app`，`options.appName` 为 `cloud-patrol`。业务页面显式声明 `accessSupport: support` 和 `assetTypes`，点位菜单同时声明岗位、计划、排班、等级、标准及 `user`，使模板编辑器能够配置人员查询的数据范围；配置资产使用 `SELECT_AND_BIND`，人员使用 `SELECT`。按菜单管理流程增量导入，不全量初始化覆盖其他业务菜单。已有环境应先提升业务分组及其子节点的层级，再移除旧根节点，避免递归删除下级菜单。模板及项目应用创建步骤见后端 `deploy/patrol/authentication-patrol-application.yml` 和 README。源码菜单不是自动授权，已持久化的菜单或模板也不会只因改源码自动更新。
+`baseMenu` 直接以四个巡更业务分组为一级菜单，页面为二级菜单，不再套“智能巡更”根节点；应用名称仍为智能巡更。宿主现有布局在左侧显示分组，在右侧页签显示组内页面。所有菜单均为 `owner: app`，`options.appName` 为 `cloud-patrol`。业务页面显式声明 `accessSupport: support` 和 `assetTypes`，点位菜单同时声明岗位、计划、排班、等级、标准及 `user`，使模板编辑器能够配置人员查询的数据范围；配置资产使用 `SELECT_AND_BIND`，人员使用 `SELECT`。按菜单管理流程增量导入，不全量初始化覆盖其他业务菜单。已有环境应先提升业务分组及其子节点的层级，再移除旧根节点，避免递归删除下级菜单。模板及项目应用创建步骤见后端 `deploy/patrol/authentication-patrol-application.yml` 和 README。源码菜单不是自动授权，已持久化的菜单或模板也不会只因改源码自动更新。
 
 图片通过巡更附件 API 复用平台文件服务，只保存业务附件 ID；每题最多一张，支持 JPEG/PNG/WebP、最大5MB，错误时保留原附件以便重试。标准/记录菜单声明 `patrolAttachment` 与 `patrol-attachment:query`，标准保存动作另含 `patrol-attachment:save`；CloudPatrol 模板同步新增附件资产 `SELECT_AND_BIND`。已存在环境须增量更新菜单、模板、订阅和应用授权，重启不会自动补齐。PC 上传不能证明现场拍摄，APP 相机/水印和真机验收仍属后续范围。
 
@@ -95,3 +95,7 @@ node node_modules/vue-tsc/bin/vue-tsc.js --noEmit -p tsconfig.workspace.json
 点位支持多个分类。点位列表提供“关联分类”和“取消点位”：取消仅移除所选分类关系并停止对应分类的计划，保留点位和历史，不等于停用物理点位。重新关联不会自动恢复旧计划。点位编辑展示当前分类，分类关系通过专门操作调整。
 
 指定岗位和配置规则按点位、分类独立保存。分类侧栏作为弹窗默认分类；多分类概览中需明确选择所有勾选点位共有的分类，避免覆盖另一分类的配置。概览展示有效岗位汇总，分类视图及导出只使用当前分类的岗位。前后端须配套更新，新增分类关系接口及岗位概览接口需要对应后端版本。
+
+## 公共基础模块
+
+PC 宿主须检出并加载 `modules/property-base-ui`（分支 `2.20`）。开发白名单包含本业务模块、`property-base-ui` 和认证模块；`build` 输出独立业务包，`build:with-base` 输出包含公共模块的宿主聚合产物。基础菜单仅由公共模块初始化一次，不再初始化本业务的旧基础菜单。已有角色须授权公共 `charging/*` 菜单，旧菜单编码不会自动迁移；仅清理对应应用的旧基础菜单，勿全量重建其他系统菜单。项目章统一使用公共组织配置的 `/seal` 文件引用契约和独立 `seal` 权限。

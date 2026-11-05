@@ -10,14 +10,30 @@
     "allowJs": true,
     "allowImportingTsExtensions": true,
     "jsx": "preserve",
-    "lib": ["ES2022", "DOM"],
-    "types": ["vite/client"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "types": [
+      "vite/client"
+    ],
     "baseUrl": ".",
     "paths": {
-      "vue": ["../../node_modules/vue"],
-      "vue/*": ["../../node_modules/vue/*"],
-      "@jetlinks-web-core/*": ["../../jetlinks-web-core/src/*"],
-      "@/*": ["../../jetlinks-web-core/src/*"]
+      "vue": [
+        "../../node_modules/vue"
+      ],
+      "vue/*": [
+        "../../node_modules/vue/*"
+      ],
+      "@jetlinks-web-core/*": [
+        "../../jetlinks-web-core/src/*"
+      ],
+      "@/*": [
+        "../../jetlinks-web-core/src/*"
+      ],
+      "@property-base-ui/*": [
+        "../property-base-ui/*"
+      ]
     }
   },
   "include": [
@@ -26,5 +42,8 @@
     "../../jetlinks-web-core/src/auto-imports.d.ts",
     "../../jetlinks-web-core/src/env.d.ts"
   ],
-  "exclude": ["node_modules", "dist"]
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

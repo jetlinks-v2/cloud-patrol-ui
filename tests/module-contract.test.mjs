@@ -140,7 +140,7 @@ test('menu grants expose every template asset, including the person directory us
     assert(read('views/patrol/points/Page.vue').includes(`patrol/points:${id}`))
   }
   assert.deepEqual(menus.map(node => node.id), [
-    'patrol-system', 'patrol-base', 'patrol-point-management', 'patrol-record-management',
+    'patrol-base', 'patrol-point-management', 'patrol-record-management',
     'patrol-statistics',
   ])
   assert(menus.every(node => node.children?.every(child => !child.children?.length)))
@@ -195,18 +195,12 @@ test('menu button translations use the JetLinks single-message string map contra
   }
 })
 
-// 系统管理复制后保留公共后端资源，但路由和按钮使用巡更菜单命名。
-test('system management pages use patrol routes with shared property permissions', () => {
-  assert.deepEqual(systemPages.map(page => page.name), ['组织配置', '用户管理', '空间管理', '客户管理', '字典配置'])
-  const ids = new Set()
-  for (const item of [...menus, ...pages, ...systemPages]) {
-    assert(!ids.has(item.id), item.id); ids.add(item.id)
+// 基础页面只由公共模块装配，巡更不再维护菜单、路由或按钮副本。
+test('system management belongs to the shared property module', () => {
+  assert.deepEqual(systemPages, [])
+  for (const page of ['OrganizationType', 'User', 'Space', 'Customer', 'Dictionary']) {
+    assert(!existsSync(new URL(`views/patrol/${page}/index.vue`, root)))
   }
-  for (const item of systemPages) {
-    assert(item.code.startsWith('patrol/'))
-    assert(item.url.startsWith('/park/patrol/system/'))
-    assert(existsSync(new URL(`views/${item.code}/index.vue`, root)))
-    assert(template.includes(`- id: ${item.id}`))
-    assert(item.permissions.every(permission => permission.permission.startsWith('property-')))
-  }
+  assert.deepEqual(JSON.parse(read('package.json')).scripts.dev.split('--module-name ')[1].split(','),
+    ['cloud-patrol-ui', 'property-base-ui', 'authentication-manager-ui'])
 })
