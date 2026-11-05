@@ -21,12 +21,14 @@ test('editing clones Vue proxy data and normalizes enum value without changing t
   draft.rule.weekly['1'][0].requiredCount = 3
   assert.equal(source.rule.weekly['1'][0].requiredCount, 1)
 })
-test('a new standard and post have independent collections', () => {
+test('new standards and points have independent collections', () => {
   const one = draftOf('standards'),
     two = draftOf('standards')
   one.items.push({ id: 'one', title: 'Safety', required: true, options: ['OK'] })
   assert.equal(two.items.length, 0)
-  assert.deepEqual(draftOf('posts').userIds, [])
+  const point = draftOf('points')
+  point.tagIds.push('tag-one')
+  assert.deepEqual(draftOf('points').tagIds, [])
 })
 test('task states use half-open windows and completion facts', () => {
   const task = { startTime: 1000, endTime: 2000, requiredCount: 2, completedCount: 1 }

@@ -19,7 +19,7 @@ export const upload = (file: File, projectId?: string) => {
   const body = new FormData(); body.append('file', file)
   return request<AttachmentReceipt>('/park/patrol/attachments/evidence', 'POST', body, projectId)
 }
-export const preview = (id: string) => request<{ dataUrl: string }>(`/park/patrol/attachments/${encodeURIComponent(id)}/preview`, 'GET')
+export const preview = (id: string, projectId?: string) => request<{ dataUrl: string }>(`/park/patrol/attachments/${encodeURIComponent(id)}/preview`, 'GET', undefined, projectId)
 
 export const myMissed = (from: string, to: string) => request<import('../model/missed').MissedItem[]>('/park/patrol/mobile/missed/_query', 'POST', { from, to })
 export const applyMyMissed = (itemIds: string[], reason: string) => request<number>('/park/patrol/mobile/missed/apply', 'POST', { itemIds, reason })

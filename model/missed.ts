@@ -5,7 +5,7 @@ export interface MissedItem {
   status: MissedStatus | EnumValue<MissedStatus>; applicationId?: string
   applicantId?: string; applicantName?: string; reason?: string; applyTime?: number
   auditorName?: string; auditTime?: number; auditRemark?: string
-  pointName?: string; postName?: string; periodStartTime: number; periodEndTime: number
+  pointName?: string; roleName?: string; periodStartTime: number; periodEndTime: number
 }
 export interface MissedEvent {
   id: string; applicationId: string; action: 'apply' | 'approve' | 'reject' | 'withdraw'

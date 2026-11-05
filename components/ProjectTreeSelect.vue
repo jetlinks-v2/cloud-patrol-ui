@@ -10,14 +10,14 @@ import { TreeSelect as ATreeSelect } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import { useProjects } from '../composables/useProjects'
 import { findOrganization, projectTree } from '../model/projects'
-const props = withDefaults(defineProps<{ modelValue?: string; projectsOnly?: boolean; allowClear?: boolean; disabled?: boolean; placeholder?: string }>(), { projectsOnly: true, allowClear: true })
+const props = withDefaults(defineProps<{ modelValue?: string; allowClear?: boolean; disabled?: boolean; placeholder?: string }>(), { allowClear: true })
 const emit = defineEmits<{ 'update:modelValue': [value: string | undefined] }>()
 const { t } = useI18n()
 const { tree, loading, failed } = useProjects()
-const options = computed(() => projectTree(tree.value, props.projectsOnly))
+const options = computed(() => projectTree(tree.value))
 function update(value: unknown) {
   if (typeof value !== 'string' || !value) { emit('update:modelValue', undefined); return }
   const node = findOrganization(tree.value, value)
-  if (node && !projectTree([node], props.projectsOnly)[0].disabled) emit('update:modelValue', value)
+  if (node && !projectTree([node])[0].disabled) emit('update:modelValue', value)
 }
 </script>

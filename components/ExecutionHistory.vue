@@ -11,7 +11,9 @@
       mode="TABLE"
       type="PAGE"
       row-key="id"
-      :scroll="{ x: 1650 }"
+      size="small"
+      :scroll="{ x: 1050, y: false }"
+      :body-style="{ padding: 0, height: 'auto' }"
       :alert-show="false"
       :default-params="{
         sorts: [
@@ -20,14 +22,13 @@
         ],
       }"
     >
-      <template #period="row">{{ dateTime(row.periodStartTime) }} ～ {{ dateTime(row.periodEndTime) }}</template>
-      <template #result="row">{{ t(`Patrol.checkResults.${enumValue(row.result) ?? 'not_evaluated'}`) }}</template>
+      <template #period="row">{{ dateTime(row.periodStartTime) }} {{ t('Patrol.periodTo') }} {{ dateTime(row.periodEndTime) }}</template>
+      <template #pointLocation>{{ pointLocation || '—' }}</template>
       <template #collectedTime="row">{{ row.collectedTime == null ? t('Patrol.unrecorded') : dateTime(row.collectedTime) }}</template>
       <template #networkStatus="row">{{ t(`Patrol.networkStates.${enumValue(row.networkStatus) ?? 'unrecorded'}`) }}</template>
-      <template #receiveTime="row">{{ dateTime(row.receiveTime) }}</template>
       <template #actions="row"
         ><a-button type="link" @click="selected = row">{{
-          t('Patrol.details')
+          t('Patrol.view')
         }}</a-button></template
       >
     </j-pro-table>
@@ -42,6 +43,7 @@
           <a-descriptions-item :label="t('Patrol.point')">{{
             selected.pointName
           }}</a-descriptions-item>
+          <a-descriptions-item :label="t('Patrol.pointLocation')">{{ pointLocation || '—' }}</a-descriptions-item>
           <a-descriptions-item :label="t('Patrol.person')">{{
             selected.userName
           }}</a-descriptions-item>
@@ -78,7 +80,7 @@ import { dateTime } from '../model/display'
 import { enumValue } from '../model/standards'
 import type { Execution, Query } from '../api/types'
 import InspectionResults from './InspectionResults.vue'
-const props = defineProps<{ taskGroupId?: string; taskId?: string }>()
+const props = defineProps<{ taskGroupId?: string; taskId?: string; pointLocation?: string }>()
 const { t } = useI18n()
 const params = ref<Query>({ terms: [] }),
   selected = ref<Execution>()
@@ -109,26 +111,18 @@ const fields = computed(() => [
   },
 ])
 const columns = computed(() => [
-  { title: t('Patrol.periodNo'), dataIndex: 'periodNo', key: 'periodNo' },
-  { title: t('Patrol.periodTasks'), dataIndex: 'period', key: 'period', scopedSlots: true, width: 310 },
-  { title: t('Patrol.point'), dataIndex: 'pointName', key: 'pointName' },
-  { title: t('Patrol.person'), dataIndex: 'userName', key: 'userName' },
-  { title: t('Patrol.collectedTime'), dataIndex: 'collectedTime', key: 'collectedTime', scopedSlots: true, width: 180 },
-  { title: t('Patrol.networkStatus'), dataIndex: 'networkStatus', key: 'networkStatus', scopedSlots: true, width: 130 },
-  {
-    title: t('Patrol.receiveTime'),
-    dataIndex: 'receiveTime',
-    key: 'receiveTime',
-    scopedSlots: true,
-  },
-  { title: t('Patrol.checkResult'), dataIndex: 'result', key: 'result', scopedSlots: true },
-  { title: t('Patrol.remark'), dataIndex: 'remark', key: 'remark', ellipsis: true },
+  { title: t('Patrol.belongPeriod'), dataIndex: 'period', key: 'period', scopedSlots: true, width: 350 },
+  { title: t('Patrol.patrolTime'), dataIndex: 'collectedTime', key: 'collectedTime', scopedSlots: true, width: 170 },
+  { title: t('Patrol.pointLocation'), dataIndex: 'pointLocation', key: 'pointLocation', scopedSlots: true, width: 180 },
+  { title: t('Patrol.patrolPerson'), dataIndex: 'userName', key: 'userName', width: 140 },
+  { title: t('Patrol.patrolNetworkStatus'), dataIndex: 'networkStatus', key: 'networkStatus', scopedSlots: true, width: 110 },
   {
     title: t('Patrol.actions'),
     dataIndex: 'actions',
     key: 'actions',
     scopedSlots: true,
-    width: 100,
+    width: 80,
+    fixed: 'right',
   },
 ])
 </script>
@@ -137,7 +131,5 @@ const columns = computed(() => [
   display: flex;
   flex-direction: column;
   gap: var(--space-3, 16px);
-  height: 100%;
-  min-height: 0;
 }
 </style>

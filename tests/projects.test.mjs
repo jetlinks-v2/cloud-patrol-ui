@@ -19,6 +19,5 @@ test('项目树只允许标注项目节点选择，普通组织和外协保留�
   assert.equal(root.children[2].children[0].selectable, true)
   assert.equal(findOrganization(tree, 'E').name, 'E')
   assert.equal(findOrganization(tree, 'hidden'), undefined)
-  assert.equal(projectTree(tree, false)[0].selectable, true)
 })
 test('空权限树保持空，不能补出不可见组织或项目', () => assert.deepEqual(projectTree([]), []))

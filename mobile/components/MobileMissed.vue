@@ -26,7 +26,7 @@ watch(state, () => { selection.value = [] })
   <p v-else-if="!rows.length && !error" class="empty">{{ t('Patrol.missed.empty') }}</p>
   <section v-for="item in rows" :key="item.id" class="panel">
     <div class="card-heading"><h2>{{ item.pointName || '—' }}</h2><span>{{ t(`Patrol.missed.states.${missedState(item)}`) }}</span></div>
-    <p class="muted">{{ item.postName }} · {{ t('Patrol.missed.occurrence') }} {{ item.occurrenceNo }}</p>
+    <p class="muted">{{ item.roleName }} · {{ t('Patrol.missed.occurrence') }} {{ item.occurrenceNo }}</p>
     <p>{{ dateTime(item.periodStartTime) }} ～ {{ dateTime(item.periodEndTime) }}</p>
     <label v-if="canApplyMissed(item)"><input v-model="selection" type="checkbox" :value="item.id" :disabled="saving" /> {{ t('Patrol.missed.select') }}</label>
     <dl v-if="item.applicationId" class="missed-summary">

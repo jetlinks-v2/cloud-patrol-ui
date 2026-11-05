@@ -3,6 +3,6 @@ import type { Term } from '../api/types'
 export function pointTagsTerm(value: unknown, excluded: boolean) {
   return { column: 'tagIds', termType: `patrol-point-tags${excluded ? '$not' : ''}`, value } satisfies Term
 }
-export function pointPostsTerm(value: unknown, excluded: boolean) {
-  return { column: 'id', termType: `patrol-point-plan${excluded ? '$not' : ''}`, value: { 'postId$in': value, enabled: true } } satisfies Term
+export function pointRolesTerm(value: unknown, excluded: boolean) {
+  return { column: 'id', termType: `patrol-point-plan${excluded ? '$not' : ''}`, value: { 'roleId$in': value, enabled: true } } satisfies Term
 }

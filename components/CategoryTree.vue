@@ -5,7 +5,16 @@
       <a-alert v-if="failed" type="error" :message="t('Patrol.loadFailed')" />
       <a-tree v-else-if="filtered.length" :tree-data="filtered" :selected-keys="selectedId ? [selectedId] : []"
         :expanded-keys="expanded" :auto-expand-parent="autoExpand" block-node
-        @expand="expand" @select="select" />
+        @expand="expand" @select="select">
+        <template #title="node">
+          <span class="category-node">
+            <span class="category-node-title">{{ node.title }}</span>
+            <span v-if="$slots.actions" class="category-node-actions" @click.stop @dblclick.stop @mousedown.stop>
+              <slot name="actions" :id="node.key" />
+            </span>
+          </span>
+        </template>
+      </a-tree>
       <a-empty v-else :image="Empty.PRESENTED_IMAGE_SIMPLE" />
     </a-spin>
   </div>
@@ -28,4 +37,11 @@ function select(keys: Key[]) { emit('select', keys.length ? String(keys[0]) : un
 <style scoped>
 .category-tree { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
 .category-tree :deep(.ant-tree) { margin-top: 12px; }
+.category-tree :deep(.ant-tree-title) { display:block; }
+.category-node { display:flex; align-items:center; gap:4px; min-width:0; }
+.category-node-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.category-node-actions { display:flex; align-items:center; opacity:0; pointer-events:none; }
+.category-tree :deep(.ant-tree-treenode:hover) .category-node-actions,
+.category-tree :deep(.ant-tree-treenode:focus-within) .category-node-actions { opacity:1; pointer-events:auto; }
+@media (hover:none) { .category-node-actions { opacity:1; pointer-events:auto; } }
 </style>

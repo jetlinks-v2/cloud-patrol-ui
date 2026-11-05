@@ -1,4 +1,4 @@
-export type Resource = 'categories' | 'points' | 'standards' | 'posts' | 'rosters' | 'plans' | 'levels' | 'tags' | 'warnings'
+export type Resource = 'categories' | 'points' | 'standards' | 'roles' | 'rosters' | 'plans' | 'levels' | 'tags' | 'warnings'
 export interface EnumValue<T extends string = string> {
   value: T
   text: string
@@ -37,7 +37,6 @@ export interface AttachmentReceipt { id: string; name: string; mediaType: string
 export interface ConfigEntity {
   projectId?: string
   projectName?: string
-  ownerOrganizationId?: string
   id?: string
   name: string
   enabled: boolean
@@ -50,7 +49,7 @@ export interface ConfigEntity {
   code?: string
   categoryId?: string
   categoryIds?: string[]
-  assignedPostIds?: string[]
+  assignedRoleIds?: string[]
   tagIds?: string[]
   levelId?: string
   shiftName?: string
@@ -64,7 +63,7 @@ export interface ConfigEntity {
   nfcCode?: string
   items?: CheckItem[]
   userIds?: string[]
-  postId?: string
+  roleId?: string
   businessDate?: string
   userId?: string
   startTime?: number
@@ -77,6 +76,8 @@ export interface ConfigEntity {
   rule?: PatrolRule
 }
 export interface TaskGroup {
+  /** 空串表示全员任务，非平台角色 ID。 */
+  roleId: string
   projectId?: string
   projectName?: string
   id: string
@@ -84,7 +85,7 @@ export interface TaskGroup {
   name: string
   pointId: string
   pointName: string
-  postName: string
+  roleName: string
   belongDate: string
   ruleVersion: string
   periodCount: number
@@ -99,6 +100,8 @@ export interface TaskGroup {
   endTime: number
 }
 export interface Task {
+  /** 沿生成快照区分指定角色与全员任务。 */
+  roleId: string
   projectId?: string
   projectName?: string
   taskGroupId?: string
@@ -110,7 +113,7 @@ export interface Task {
   planId: string
   pointId: string
   pointName: string
-  postName: string
+  roleName: string
   businessDate: string
   startTime: number
   endTime: number

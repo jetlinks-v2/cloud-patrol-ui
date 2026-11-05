@@ -23,8 +23,9 @@ export function useMobilePatrol() {
   const images = ref<Record<string, string>>({}), total = ref(0), page = ref(0)
   const drafts = new Map<string, Draft>()
   const pending = pendingStore(sessionStorage)
+  const localImages = new Set<string>()
   let version = 0, disposed = false
-  onScopeDispose(() => { disposed = true; version++ })
+  onScopeDispose(() => { disposed = true; version++; localImages.forEach(url => URL.revokeObjectURL(url)) })
   const locked = computed(() => sending.value || uploading.value || !!draft.value.pending)
   const reason = (value: string) => ({
     'error.patrol.execution.completed': 'Mobile.completed',
@@ -115,13 +116,21 @@ export function useMobilePatrol() {
       const answer = draft.value.answers.find(item => item.itemId === id)
       if (answer) answer.attachmentId = receipt.id
       delete errors.value[id]
-      images.value[receipt.id] = (await api.preview(receipt.id)).dataUrl
+      // 上传成功即展示所选文件；缩略图不依赖第二次网络读取，附件 ID 仍以服务端回执为准。
+      const localUrl = URL.createObjectURL(file)
+      if (disposed) { URL.revokeObjectURL(localUrl); return }
+      localImages.add(localUrl)
+      images.value[receipt.id] = localUrl
     } catch (cause) { fail(cause) }
     finally { uploading.value = false }
   }
   async function preview(id: string) {
     error.value = ''
-    try { images.value[id] = (await api.preview(id)).dataUrl }
+    if (images.value[id]) return
+    try {
+      const data = await api.preview(id, selected.value?.task.projectId ?? record.value?.projectId)
+      if (!disposed) images.value[id] = data.dataUrl
+    }
     catch (cause) { fail(cause) }
   }
   async function submit() {

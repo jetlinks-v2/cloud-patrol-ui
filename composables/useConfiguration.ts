@@ -24,13 +24,13 @@ export function useConfiguration(resource: Resource, point?: ConfigEntity, categ
     const ids = rows.map(row => row.id!)
     const details = categoryId?.value ? await getPointAssignments(ids, categoryId.value) : await getPointAssignmentSummary(ids)
     if (!details.success) throw new Error(t('Patrol.loadFailed'))
-    const posts = new Map(details.result.map(detail => [detail.pointId, detail.assignments.map(row => row.postId!)]))
-    rows.forEach(row => { row.assignedPostIds = [...new Set(posts.get(row.id!) ?? [])] })
+    const posts = new Map(details.result.map(detail => [detail.pointId, detail.assignments.map(row => row.roleId!)]))
+    rows.forEach(row => { row.assignedRoleIds = [...new Set(posts.get(row.id!) ?? [])] })
     return response
   }
   const edit = (source?: ConfigEntity) => {
     draft.value = draftOf(resource, source)
-    if (!source) draft.value.projectId = selectedProject()
+    if (!source && resource !== 'warnings') draft.value.projectId = point?.projectId ?? selectedProject()
     if (resource === 'points' && !source && categoryId?.value) draft.value.categoryId = categoryId.value
     if (point?.id) {
       draft.value.pointId = point.id

@@ -4,6 +4,7 @@
     <a-alert type="info" show-icon :message="t('Patrol.projects.migrationHint')" style="margin-bottom:16px" />
     <a-space style="margin-bottom:16px">
       <a-select v-model:value="type" :options="types" style="width:160px" @change="load(0)" />
+      <span>{{ t('Patrol.projects.label') }}</span>
       <ProjectTreeSelect v-model="project" style="width:300px" />
     </a-space>
     <a-alert v-if="failed" type="error" :message="t('Patrol.loadFailed')" />
@@ -23,13 +24,13 @@ import { resourceTypes } from '../model/resources'
 import type { ConfigEntity, Page, Resource } from '../api/types'
 const emit = defineEmits<{ close: [] }>()
 const { t } = useI18n()
-type MigrationResource = Resource | 'attachments'
+type MigrationResource = Exclude<Resource, 'roles'> | 'attachments'
 const assetType = (value: MigrationResource) => value === 'attachments' ? 'patrolAttachment' : resourceTypes[value]
 const label = (value: MigrationResource) => t(value === 'attachments' ? 'Patrol.projects.attachments' : `Patrol.names.${value}`)
 const type = ref<MigrationResource>('categories'), project = ref(selectedProject()), rows = ref<ConfigEntity[]>([])
 const selected = ref<string[]>([]), page = ref(0), total = ref(0), loading = ref(false), saving = ref(false), failed = ref(false)
 let generation = 0
-const types = computed(() => (['attachments', 'categories', 'tags', 'levels', 'warnings', 'standards', 'posts', 'points', 'rosters', 'plans'] as MigrationResource[])
+const types = computed(() => (['attachments', 'categories', 'tags', 'levels', 'warnings', 'standards', 'points', 'rosters', 'plans'] as MigrationResource[])
   .map(value => ({ value, label: label(value) })))
 const columns = computed(() => [{ title: label(type.value), dataIndex: 'name' },
   { title: t('Patrol.code'), dataIndex: 'code' }])

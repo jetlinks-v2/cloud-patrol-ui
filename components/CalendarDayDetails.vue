@@ -3,9 +3,9 @@
     <a-descriptions-item :label="t('Patrol.calendar.staffCount')">{{ detail.staffCount }}</a-descriptions-item>
     <a-descriptions-item :label="t('Patrol.calendar.shiftCount')">{{ detail.shiftCount }}</a-descriptions-item>
     <a-descriptions-item :label="t('Patrol.calendar.pointCount')">{{ detail.pointCount }}</a-descriptions-item>
-    <a-descriptions-item :label="t('Patrol.requiredCount')">{{ detail.expectedCount }}</a-descriptions-item>
-    <a-descriptions-item :label="t('Patrol.completedCount')">{{ detail.completedCount }}</a-descriptions-item>
-    <a-descriptions-item :label="t('Patrol.overdueMissing')">{{ detail.missedCount }}</a-descriptions-item>
+    <a-descriptions-item :label="t('Patrol.calendar.completedPointCount')">{{ detail.completedPointCount }}</a-descriptions-item>
+    <a-descriptions-item :label="t('Patrol.calendar.missedPointCount')">{{ detail.missedPointCount }}</a-descriptions-item>
+    <a-descriptions-item :label="t('Patrol.calendar.absentPointCount')">{{ detail.absentPointCount }}</a-descriptions-item>
   </a-descriptions>
   <a-tabs>
     <a-tab-pane key="staff" :tab="t('Patrol.calendar.staff')">
@@ -19,14 +19,18 @@
         </template>
       </a-table>
     </a-tab-pane>
-    <a-tab-pane key="tasks" :tab="t('Patrol.periodTasks')">
-      <a-table :columns="taskColumns" :data-source="detail.tasks" row-key="id" :pagination="{ pageSize: 10 }" :scroll="{ x: 1100 }">
+    <a-tab-pane key="points" :tab="t('Patrol.calendar.points')">
+      <a-alert type="info" show-icon :message="t('Patrol.calendar.pointHint')" style="margin-bottom:12px" />
+      <a-table :columns="pointColumns" :data-source="points" row-key="key" :pagination="{ pageSize: 10 }" :scroll="{ x: 800 }">
+        <template #expandedRowRender="{ record }"><CalendarPointExecutions :tasks="record.tasks" /></template>
         <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'period'">{{ dateTime(record.startTime) }} ～ {{ dateTime(record.endTime) }}</template>
-          <template v-if="column.key === 'category'">{{ record.categoryName || '—' }}</template>
-          <template v-if="column.key === 'progress'">{{ record.completedCount }}/{{ record.requiredCount }}</template>
-          <template v-if="column.key === 'last'">{{ dateTime(record.lastExecutionTime) }}</template>
-          <template v-if="column.key === 'status'">{{ t(`Patrol.states.${taskState(record as Task)}`) }}</template>
+          <template v-if="column.key === 'roles'">{{ [...record.roles, ...(record.allStaff ? [t('Patrol.allStaffPatrol')] : [])].join('、') || '—' }}</template>
+          <template v-if="column.key === 'status'">{{ t(`Patrol.calendar.pointStatus.${record.status}`) }}</template>
+          <template v-if="column.key === 'missed'">
+            <a-tag v-if="record.missed" color="error">{{ t('Patrol.calendar.hasMissed') }}</a-tag>
+            <a-tag v-else-if="record.absent" color="error">{{ t('Patrol.calendar.absent') }}</a-tag>
+            <span v-else>—</span>
+          </template>
         </template>
       </a-table>
     </a-tab-pane>
@@ -35,24 +39,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Descriptions as ADescriptions, DescriptionsItem as ADescriptionsItem, Tabs as ATabs, TabPane as ATabPane, Table as ATable } from 'ant-design-vue'
-import type { Task } from '../api/types'
+import { Descriptions as ADescriptions, DescriptionsItem as ADescriptionsItem, Tabs as ATabs, TabPane as ATabPane, Table as ATable, Alert as AAlert, Tag as ATag } from 'ant-design-vue'
 import type { CalendarDetail } from '../api/calendar'
-import { dateTime, taskState } from '../model/display'
-defineProps<{ detail: CalendarDetail }>()
+import { dateTime } from '../model/display'
+import { calendarPoints } from '../model/calendar'
+import CalendarPointExecutions from './CalendarPointExecutions.vue'
+const props = defineProps<{ detail: CalendarDetail }>()
 const { t } = useI18n()
+const points = computed(() => calendarPoints(props.detail.tasks))
 const staffColumns = computed(() => [
   { title: t('Patrol.person'), key: 'person' }, { title: t('Patrol.calendar.telephone'), key: 'telephone' },
   { title: t('Patrol.shiftName'), key: 'shift' },
   { title: t('Patrol.periodTasks'), key: 'period' }, { title: t('Patrol.state'), key: 'status' },
 ])
-const taskColumns = computed(() => [
-  { title: t('Patrol.periodTasks'), key: 'period', width: 310 },
+const pointColumns = computed(() => [
+  { title: t('Patrol.projects.label'), dataIndex: 'projectName' },
   { title: t('Patrol.point'), dataIndex: 'pointName' },
-  { title: t('Patrol.category'), dataIndex: 'categoryName', key: 'category' },
-  { title: t('Patrol.level'), dataIndex: 'levelName' },
-  { title: t('Patrol.post'), dataIndex: 'postName' },
-  { title: t('Patrol.calendar.progress'), key: 'progress' },
-  { title: t('Patrol.calendar.lastTime'), key: 'last' }, { title: t('Patrol.state'), key: 'status' },
+  { title: t('Patrol.post'), key: 'roles' },
+  { title: t('Patrol.state'), key: 'status' },
+  { title: t('Patrol.calendar.missedStatus'), key: 'missed' },
 ])
 </script>

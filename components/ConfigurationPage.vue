@@ -1,6 +1,9 @@
 <template>
   <div class="patrol-page">
-    <ConditionFilter :fields="fields" @change="filterChanged" />
+    <ProjectFilterBar>
+      <ConditionFilter :fields="fields" @change="filterChanged" />
+      <a-button @click="refresh">{{ t('Patrol.refresh') }}</a-button>
+    </ProjectFilterBar>
     <a-alert v-if="exportFailed" type="error" :message="t('Patrol.exportFailed')" />
     <j-pro-table
       :columns="columns"
@@ -11,7 +14,7 @@
       type="PAGE"
       row-key="id"
       :alert-show="false"
-      :scroll="{ x: resource === 'points' ? 2310 : 1100 }"
+      :scroll="{ x: resource === 'points' ? 1990 : 1100 }"
       :default-params="{
         sorts: [
           { name: 'createTime', order: 'desc' },
@@ -23,8 +26,6 @@
         ><j-permission-button
           type="primary"
           :has-permission="savePermission(resource)"
-          :disabled="['points', 'posts'].includes(resource) && !projectSelection"
-          :title="['points', 'posts'].includes(resource) && !projectSelection ? t('Patrol.projects.chooseBeforeCreate') : undefined"
           @click="openEditor()"
           >{{ t('Patrol.add') }}</j-permission-button
         ><a-button v-if="canExportConfiguration(resource)" :loading="exporting" @click="download(resource, exportQuery)">{{ t('Patrol.export') }}</a-button
@@ -32,8 +33,7 @@
       >
       <template #category="row"><ConfigReference resource="categories" :id="categoryId || row.categoryIds || row.categoryId" /></template>
       <template #parent="row"><ConfigReference resource="categories" :id="row.parentId" /></template>
-      <template #assignedPosts="row"><ConfigReference resource="posts" :id="row.assignedPostIds" /></template>
-      <template #tags="row"><ConfigReference resource="tags" :id="row.tagIds" /></template>
+      <template #assignedPosts="row"><ConfigReference resource="roles" :id="row.assignedRoleIds" /></template>
       <template #members="row"><ConfigReference resource="persons" :id="row.userIds" /></template>
       <template #rule="row"><RuleSummary :rule="row.rule" /></template>
       <template #creatorName="row">{{ row.creatorName || '—' }}</template>
@@ -41,7 +41,7 @@
       <template #modifyTime="row">{{ dateTime(row.modifyTime) }}</template>
       <template #color="row"><a-tag :color="row.colorHex">{{ row.colorHex }}</a-tag></template>
       <template #items="row">{{ row.items?.length ?? 0 }}</template>
-      <template #post="row"><ConfigReference resource="posts" :id="row.postId" /></template>
+      <template #post="row"><ConfigReference resource="roles" :id="row.roleId" /></template>
       <template #standard="row"><ConfigReference resource="standards" :id="row.standardId" /></template>
       <template #level="row"><ConfigReference resource="levels" :id="row.levelId" /></template>
       <template #trigger="row">{{ t(`Patrol.triggers.${row.triggerChildCode}`) }}</template>
@@ -70,6 +70,7 @@
       :save-failed="saveFailed"
       :readonly="readonly"
       :point="point"
+      :category-rows="categoryRows"
       @close="visible = false"
       @save="save"
     />
@@ -77,7 +78,7 @@
 </template>
 <script setup lang="ts">
 import { patrolOptionSource } from '../composables/usePatrolOptionSource'
-import { useProjects } from '../composables/useProjects'
+import ProjectFilterBar from './ProjectFilterBar.vue'
 import ConfigReference from './ConfigReference.vue'
 import RuleSummary from './RuleSummary.vue'
 import { dateTime } from '../model/display'
@@ -93,15 +94,14 @@ import { canDeleteConfiguration } from '../api/config-delete'
 import ConfigDelete from './ConfigDelete.vue'
 import { useConfigExport, canExportConfiguration } from '../composables/useConfigExport'
 import { savePermission } from '../model/resources'
-import { pointTagsTerm, pointPostsTerm } from '../model/point-filters'
+import { pointRolesTerm } from '../model/point-filters'
 import type { ConfigEntity, Resource, Query } from '../api/types'
 const ConfigEditor = defineAsyncComponent(() => import('./ConfigEditor.vue'))
 const ConfigHistory = defineAsyncComponent(() => import('./ConfigHistory.vue'))
 const historyId = ref<string>()
 const readonly = ref(false)
-const props = defineProps<{ resource: Resource; point?: ConfigEntity; categoryId?: string; categoriesInSidebar?: boolean; selectable?: boolean }>()
+const props = defineProps<{ resource: Resource; point?: ConfigEntity; categoryId?: string; categoryRows?: ConfigEntity[]; categoriesInSidebar?: boolean; selectable?: boolean }>()
 const { t } = useI18n()
-const { selected: projectSelection } = useProjects()
 const { exporting, exportFailed, download } = useConfigExport()
 const { saveFailed, visible, saving, draft, params, terms, load, edit, save, reload } = useConfiguration(
   props.resource, props.point, toRef(props, 'categoryId')
@@ -123,16 +123,14 @@ function openEditor(row?: ConfigEntity, readOnly = false) {
 }
 // 仅传递加载函数。不要将候选缓存 Ref 放进字段定义，候选变化会触发宿主深度监听重置编辑中的条件。
 const referenceOptions = patrolOptionSource
-const categoryOptions = referenceOptions('categories'), tagOptions = referenceOptions('tags'), postOptions = referenceOptions('posts')
+const categoryOptions = referenceOptions('categories'), postOptions = referenceOptions('roles')
 const fields = computed<ConditionFilterField[]>(() => {
   const categoryField: ConditionFilterField = { title: t('Patrol.category'), dataIndex: 'categoryId', search: { type: 'select', defaultTermType: 'in', termTypeOptions: ['in', 'nin'], optionPanel: { ...categoryOptions, multiple: true, optionFields: { value: 'id', label: 'name' } } } }
   const pointFields: ConditionFilterField[] = props.resource === 'points' ? [
     { title: t('Patrol.code'), dataIndex: 'code', search: { type: 'string', defaultTermType: 'like' } },
     ...(!props.categoriesInSidebar ? [categoryField] : []),
-    { title: t('Patrol.tags'), dataIndex: 'tagIds', search: { type: 'select', defaultTermType: 'in', termTypeOptions: ['in', 'nin'], optionPanel: { ...tagOptions, multiple: true, optionFields: { value: 'id', label: 'name' } }, handleParamsItem: (record) => pointTagsTerm(record.value, record.termType === 'nin') } },
     // 关联条件最终查询点位 id；rename 同时让公共筛选组件识别转换后的列。
-    { title: t('Patrol.post'), dataIndex: 'postIds', search: { type: 'select', rename: 'id', defaultTermType: 'in', termTypeOptions: ['in', 'nin'], optionPanel: { ...postOptions, multiple: true, optionFields: { value: 'id', label: 'name' } }, handleParamsItem: (record) => pointPostsTerm(record.value, record.termType === 'nin') } },
-    { title: t('Patrol.nfc'), dataIndex: 'nfcCode', search: { type: 'string', defaultTermType: 'like' } },
+    { title: t('Patrol.post'), dataIndex: 'roleIds', search: { type: 'select', rename: 'id', defaultTermType: 'in', termTypeOptions: ['in', 'nin'], optionPanel: { ...postOptions, multiple: true, optionFields: { value: 'id', label: 'name' } }, handleParamsItem: (record) => pointRolesTerm(record.value, record.termType === 'nin') } },
     { title: t('Patrol.location'), dataIndex: 'location', search: { type: 'string', defaultTermType: 'like' } },
   ] : []
   return [
@@ -145,24 +143,22 @@ const fields = computed<ConditionFilterField[]>(() => {
   ]
 })
 const columns = computed(() => [
-  { title: t('Patrol.projects.label'), dataIndex: 'projectName', key: 'projectName', width: 160, ellipsis: true },
+  ...(props.resource === 'warnings' ? [] : [{ title: t('Patrol.projects.label'), dataIndex: 'projectName', key: 'projectName', width: 160, ellipsis: true }]),
   { title: t(`Patrol.names.${props.resource}`), dataIndex: 'name', key: 'name', ellipsis: true, width: 180 },
   ...(props.resource === 'points'
     ? [
         { title: t('Patrol.code'), dataIndex: 'code', key: 'code', width: 150, ellipsis: true },
-        { title: t('Patrol.post'), dataIndex: 'assignedPostIds', key: 'assignedPosts', scopedSlots: true, width: 180 },
+        { title: t('Patrol.post'), dataIndex: 'assignedRoleIds', key: 'assignedPosts', scopedSlots: true, width: 180 },
         { title: t('Patrol.category'), dataIndex: 'categoryId', key: 'category', scopedSlots: true, width: 160 },
-        { title: t('Patrol.tags'), dataIndex: 'tagIds', key: 'tags', scopedSlots: true, width: 160 },
-        { title: t('Patrol.nfc'), dataIndex: 'nfcCode', key: 'nfcCode', width: 160, ellipsis: true },
         { title: t('Patrol.location'), dataIndex: 'location', key: 'location', width: 200, ellipsis: true },
       ]
     : []),
   ...(props.resource === 'categories' ? [{ title: t('Patrol.parent'), dataIndex: 'parentId', key: 'parent', scopedSlots: true }] : []),
   ...(props.resource === 'levels' ? [{ title: t('Patrol.rule'), dataIndex: 'rule', key: 'rule', scopedSlots: true, width: 400 }] : []),
   ...(props.resource === 'standards' ? [{ title: t('Patrol.itemCount'), dataIndex: 'items', key: 'items', scopedSlots: true }] : []),
-  ...(props.resource === 'posts' ? [{ title: t('Patrol.members'), dataIndex: 'userIds', key: 'members', scopedSlots: true }] : []),
+
   ...(props.resource === 'plans' ? [
-    { title: t('Patrol.post'), dataIndex: 'postId', key: 'post', scopedSlots: true },
+    { title: t('Patrol.post'), dataIndex: 'roleId', key: 'post', scopedSlots: true },
     { title: t('Patrol.standard'), dataIndex: 'standardId', key: 'standard', scopedSlots: true },
     { title: t('Patrol.level'), dataIndex: 'levelId', key: 'level', scopedSlots: true },
     { title: t('Patrol.effectiveFrom'), dataIndex: 'effectiveFrom', key: 'effectiveFrom' },

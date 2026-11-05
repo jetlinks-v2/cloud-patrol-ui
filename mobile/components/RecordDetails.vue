@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Image } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import type { Execution } from '../../api/types'
 import { enumValue } from '../../model/standards'
@@ -26,7 +27,7 @@ const { t } = useI18n()
       {{ t(`Mobile.${enumValue(record.itemResults?.find(result => result.itemId === item.id)?.result) || 'not_evaluated'}`) }}
     </p>
     <template v-for="answer in record.answers.filter(answer => answer.itemId === item.id && answer.attachmentId)" :key="answer.itemId">
-      <img v-if="images[answer.attachmentId!]" class="evidence" :src="images[answer.attachmentId!]" :alt="t('Mobile.attachment')" />
+      <Image v-if="images[answer.attachmentId!]" class="evidence" :width="160" :src="images[answer.attachmentId!]" :alt="t('Mobile.attachment')" />
       <button v-else type="button" class="text-button" @click="emit('preview', answer.attachmentId!)">{{ t('Mobile.attachment') }}</button>
     </template>
   </section>

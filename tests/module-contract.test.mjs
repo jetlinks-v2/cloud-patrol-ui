@@ -47,7 +47,7 @@ test('page button permission expressions resolve to declared menu codes and butt
   assert.equal(checked, resources.length * 2)
 })
 test('menu, actual page, backend resource, application template and asset types align', () => {
-  assert.equal(pages.length, 10)
+  assert.equal(pages.length, 8)
   const seen = new Set()
   for (const item of pages) {
     assert(!seen.has(item.id))
@@ -98,6 +98,7 @@ test('Chinese and English dictionaries have identical keys and cover literal UI 
     'components/ExecutionHistory.vue',
     'components/CalendarDayDetails.vue',
     'components/StatisticsPage.vue',
+    'components/statistics/StatisticsFactDetails.vue',
     'views/patrol/calendar/index.vue',
     'components/ConfigEditor.vue',
     'components/RuleEditor.vue',
@@ -128,13 +129,14 @@ test('menu grants expose every template asset, including the person directory us
   }
 })
 
- test('point operations replace extra navigation while calendar and original statistics remain', () => {
+ test('point operations replace extra navigation while calendar and unified statistics remain', () => {
   const ids = new Set(pages.map(page => page.id))
   for (const id of ['patrol-posts', 'patrol-rosters', 'patrol-plans', 'patrol-tasks', 'patrol-reports']) {
     assert(!ids.has(id)); assert(!template.includes(`- id: ${id}\n`))
   }
   const point = pages.find(page => page.id === 'patrol-points')
-  for (const id of ['posts', 'assign', 'importRoster']) {
+  assert(!point.buttons.some(button => button.id === 'roles'))
+  for (const id of ['assign', 'importRoster']) {
     assert(point.buttons.some(button => button.id === id))
     assert(template.includes(`{id: ${id}, granted: true}`))
     assert(read('views/patrol/points/Page.vue').includes(`patrol/points:${id}`))
@@ -145,6 +147,8 @@ test('menu grants expose every template asset, including the person directory us
   ])
   assert(menus.every(node => node.children?.every(child => !child.children?.length)))
   assert(menus.find(node => node.id === 'patrol-point-management').children.some(node => node.id === 'patrol-calendar'))
+  assert.deepEqual(menus.find(node => node.id === 'patrol-statistics').children.map(node => node.id), ['patrol-coverage'])
+  assert.equal(pages.find(node => node.id === 'patrol-coverage').name, '巡更总览')
  })
 
 test('warning configuration has no tag management entry or write grant', () => {

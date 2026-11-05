@@ -1,6 +1,7 @@
 <template>
   <div class="mobile-project-filter">
-    <TreeSelect :value="patrolProject" :tree-data="options" :placeholder="t('Patrol.projects.all')" allow-clear
+    <label for="patrol-mobile-project">{{ t('Patrol.projects.label') }}</label>
+    <TreeSelect id="patrol-mobile-project" :value="patrolProject" :tree-data="options" :placeholder="t('Patrol.projects.all')" allow-clear
       tree-default-expand-all show-search tree-node-filter-prop="title" :loading="loading" :disabled="disabled"
       :status="failed ? 'error' : undefined" style="width:100%" @update:value="select" />
     <div v-if="failed" class="project-load-error" role="alert"><span>{{ t('Patrol.projects.failed') }}</span><Button @click="load">{{ t('Mobile.refresh') }}</Button></div>
@@ -35,6 +36,7 @@ onMounted(load)
 </script>
 <style scoped>
 .mobile-project-filter { margin-bottom: 12px; }
+.mobile-project-filter > label { display: block; margin-bottom: 6px; color: #555; font-size: 13px; }
 :global(.points-home) .mobile-project-filter { margin: 0 12px 12px; }
 .project-load-error { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; color: #bf3333; font-size: 13px; }
 </style>

@@ -32,7 +32,8 @@
         "../../jetlinks-web-core/src/*"
       ],
       "@property-base-ui/*": [
-        "../property-base-ui/*"
+        "../property-base-ui/*",
+        "../../../sass平台/cloud.jetlinks/runtime-ui/modules/property-base-ui/*"
       ]
     }
   },

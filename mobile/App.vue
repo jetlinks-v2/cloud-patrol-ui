@@ -114,7 +114,7 @@ onUnmounted(() => {
           </template>
         </template>
         <template v-else-if="selected">
-          <section class="panel"><h2>{{ selected.task.pointName || selected.task.name }}</h2><p class="muted">{{ selected.task.postName }}</p>
+          <section class="panel"><h2>{{ selected.task.pointName || selected.task.name }}</h2><p class="muted">{{ selected.task.roleId ? selected.task.roleName : t('Patrol.allStaffPatrol') }}</p>
             <p class="time-window">{{ dateTime(selected.task.startTime) }} — {{ dateTime(selected.task.endTime) }}</p>
             <p>{{ t('Mobile.progress', { done: selected.task.completedCount, total: selected.task.requiredCount }) }}</p>
             <Alert v-if="!selected.executable" type="warning" :message="t(reason(selected.reason))" show-icon />
@@ -136,7 +136,7 @@ onUnmounted(() => {
           <section class="panel point-summary"><span class="summary-pin" aria-hidden="true">⌖</span><h2>{{ activePoint.name }}</h2></section>
           <h3 class="section-title">{{ t('Mobile.window') }}</h3>
           <section v-for="row in activePoint.rows" :key="row.task.id" class="panel">
-            <h3>{{ row.task.postName }}</h3>
+            <h3>{{ row.task.roleId ? row.task.roleName : t('Patrol.allStaffPatrol') }}</h3>
             <p class="time-window">{{ dateTime(row.task.startTime) }} — {{ dateTime(row.task.endTime) }}</p>
             <p class="muted">{{ row.executable ? t('Mobile.legendReady') : t(reason(row.reason)) }}</p>
             <div class="task-bottom"><span>{{ t('Mobile.progress', { done: row.task.completedCount, total: row.task.requiredCount }) }}</span>

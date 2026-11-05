@@ -194,6 +194,18 @@
                 ]
               }
             ]
+          },
+          {
+            "id": "delete",
+            "name": "删除",
+            "permissions": [
+              {
+                "permission": "patrol-category",
+                "actions": [
+                  "delete"
+                ]
+              }
+            ]
           }
         ],
         "icon": "UnorderedListOutlined"
@@ -300,7 +312,7 @@
           "patrolPoint",
           "patrolTag",
           "patrolCategory",
-          "patrolPost",
+          "role",
           "patrolPlan",
           "patrolRoster",
           "patrolLevel",
@@ -328,7 +340,7 @@
             ]
           },
           {
-            "permission": "patrol-post",
+            "permission": "role",
             "actions": [
               "query"
             ]
@@ -372,20 +384,8 @@
             ]
           },
           {
-            "id": "posts",
-            "name": "巡更岗位与成员",
-            "permissions": [
-              {
-                "permission": "patrol-post",
-                "actions": [
-                  "save"
-                ]
-              }
-            ]
-          },
-          {
             "id": "assign",
-            "name": "指定巡更岗位 / 配置规则",
+            "name": "指定巡更角色 / 配置规则",
             "permissions": [
               {
                 "permission": "patrol-plan",
@@ -403,6 +403,23 @@
                 "permission": "patrol-roster",
                 "actions": [
                   "save"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "generate",
+            "name": "生成巡更任务",
+            "i18nMessages": {
+              "zh_CN": "生成巡更任务",
+              "en_US": "Generate patrol tasks",
+              "en": "Generate patrol tasks"
+            },
+            "permissions": [
+              {
+                "permission": "patrol-task",
+                "actions": [
+                  "generate"
                 ]
               }
             ]
@@ -603,11 +620,11 @@
       {
         "id": "patrol-coverage",
         "code": "patrol/coverage",
-        "name": "点位覆盖率",
+        "name": "巡更总览",
         "i18nMessages": {
           "name": {
-            "zh": "点位覆盖率",
-            "en": "Coverage"
+            "zh": "巡更总览",
+            "en": "Patrol overview"
           }
         },
         "owner": "app",
@@ -620,7 +637,8 @@
         "accessSupport": "support",
         "assetTypes": [
           "patrolPlan",
-          "patrolCategory"
+          "patrolCategory",
+          "patrolLevel"
         ],
         "sortIndex": 1,
         "permissions": [
@@ -635,81 +653,9 @@
             "actions": [
               "query"
             ]
-          }
-        ],
-        "buttons": []
-      },
-      {
-        "id": "patrol-qualification",
-        "code": "patrol/qualification",
-        "name": "点位合格率",
-        "i18nMessages": {
-          "name": {
-            "zh": "点位合格率",
-            "en": "Qualification"
-          }
-        },
-        "owner": "app",
-        "url": "/park/patrol/qualification",
-        "icon": "UnorderedListOutlined",
-        "showPage": [
-          "patrol-report"
-        ],
-        "assetType": "patrolPlan",
-        "accessSupport": "support",
-        "assetTypes": [
-          "patrolPlan",
-          "patrolCategory"
-        ],
-        "sortIndex": 2,
-        "permissions": [
-          {
-            "permission": "patrol-report",
-            "actions": [
-              "query"
-            ]
           },
           {
-            "permission": "patrol-category",
-            "actions": [
-              "query"
-            ]
-          }
-        ],
-        "buttons": []
-      },
-      {
-        "id": "patrol-personnel",
-        "code": "patrol/personnel",
-        "name": "人员巡更覆盖率",
-        "i18nMessages": {
-          "name": {
-            "zh": "人员巡更覆盖率",
-            "en": "Personnel"
-          }
-        },
-        "owner": "app",
-        "url": "/park/patrol/personnel",
-        "icon": "UnorderedListOutlined",
-        "showPage": [
-          "patrol-report"
-        ],
-        "assetType": "patrolPlan",
-        "accessSupport": "support",
-        "assetTypes": [
-          "patrolPlan",
-          "patrolCategory"
-        ],
-        "sortIndex": 3,
-        "permissions": [
-          {
-            "permission": "patrol-report",
-            "actions": [
-              "query"
-            ]
-          },
-          {
-            "permission": "patrol-category",
+            "permission": "patrol-level",
             "actions": [
               "query"
             ]

@@ -7,7 +7,6 @@ export const resources: Resource[] = [
   'categories',
   'points',
   'standards',
-  'posts',
   'rosters',
   'plans',
 ]
@@ -18,7 +17,7 @@ export const resourceNames: Record<Resource, string> = {
   categories: 'category',
   points: 'point',
   standards: 'standard',
-  posts: 'post',
+  roles: 'post',
   rosters: 'roster',
   plans: 'plan',
 }
@@ -29,7 +28,7 @@ export const resourceTypes: Record<Resource, string> = {
   categories: 'patrolCategory',
   points: 'patrolPoint',
   standards: 'patrolStandard',
-  posts: 'patrolPost',
+  roles: 'role',
   rosters: 'patrolRoster',
   plans: 'patrolPlan',
 }
@@ -41,9 +40,11 @@ export function draftOf(resource: Resource, source?: ConfigEntity): ConfigEntity
     ? (JSON.parse(JSON.stringify(source)) as ConfigEntity)
     : { name: '', enabled: true, description: '' }
   if (resource === 'standards') draft.items = (draft.items ?? []).map(normalizeItem)
-  if (resource === 'posts') draft.userIds ??= []
-  if (resource === 'points') { draft.tagIds ??= []; delete draft.assignedPostIds }
+  if (resource === 'points') { draft.tagIds ??= []; delete draft.assignedRoleIds }
   if (resource === 'warnings') {
+    delete draft.projectId
+    delete draft.projectName
+    delete draft.ownerOrganizationId
     draft.triggerParentCode ??= 'route'
     draft.triggerChildCode ??= 'route_missed_point'
     draft.colorHex ??= '#409EFF'
@@ -60,4 +61,4 @@ export function draftOf(resource: Resource, source?: ConfigEntity): ConfigEntity
 }
 
 /** 内部配置没有独立菜单，操作授权归属点位管理的具体按钮。 */
-export const savePermission = (resource: Resource) => ({ posts: "patrol/points:posts", plans: "patrol/points:assign", rosters: "patrol/points:importRoster" } as Partial<Record<Resource, string>>)[resource] ?? `${permission(resource)}:save`
+export const savePermission = (resource: Resource) => ({ plans: "patrol/points:assign", rosters: "patrol/points:importRoster" } as Partial<Record<Resource, string>>)[resource] ?? `${permission(resource)}:save`

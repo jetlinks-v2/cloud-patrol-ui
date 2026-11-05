@@ -59,7 +59,7 @@ const statuses = computed(() => ['none', 'pending', 'approved', 'rejected', 'wit
 const columns = computed(() => [
   { title: t('Patrol.missed.occurrence'), key: 'occurrenceNo', dataIndex: 'occurrenceNo', width: 90 },
   { title: t('Patrol.periodTasks'), key: 'period', width: 320 },
-  { title: t('Patrol.post'), key: 'postName', dataIndex: 'postName', width: 140 },
+  { title: t('Patrol.post'), key: 'roleName', dataIndex: 'roleName', width: 140 },
   { title: t('Patrol.missed.status'), key: 'status', width: 110 },
   { title: t('Patrol.missed.applicant'), key: 'applicantName', dataIndex: 'applicantName', width: 120 },
   { title: t('Patrol.missed.reason'), key: 'reason', dataIndex: 'reason', width: 220 },

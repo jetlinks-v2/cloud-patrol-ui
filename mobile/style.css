@@ -38,7 +38,8 @@ p { line-height: 1.6; }
 .upload-button { display: inline-block; padding: 10px 16px; color: #6ca95b; border: 1px dashed #9fc5f6; border-radius: 8px; cursor: pointer; }
 .upload-button.disabled { opacity: .5; cursor: default; }
 .upload-button input { display: none; }
-.evidence { display: block; width: auto; max-width: 100%; max-height: 420px; margin-top: 10px; border-radius: 8px; object-fit: contain; }
+.evidence { display: block; max-width: 100%; margin-top: 10px; cursor: zoom-in; }
+.evidence .ant-image-img { max-width: 100%; max-height: 240px; border-radius: 8px; object-fit: contain; }
 .text-button { background: transparent; border: none; color: #6ca95b; padding: 12px 0; cursor: pointer; }
 .field-error { margin: 12px 0 0; font-size: 13px; color: #bf3333; }
 .submit-bar { position: fixed; bottom: 0; left: 0; right: 0; margin-inline: auto; width: 100%; max-width: 640px; padding: 14px 16px max(14px, env(safe-area-inset-bottom)); background: #ffffffed; border-top: 1px solid #e3e9ef; backdrop-filter: blur(10px); }

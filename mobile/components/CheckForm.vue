@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Input, Radio } from 'ant-design-vue'
+import { Input, Radio, Image } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import type { Answer, CheckItem } from '../../api/types'
 import { itemType } from '../../model/standards'
@@ -23,7 +23,7 @@ function choose(id: string, event: Event) {
       {{ item.upperLimit != null ? t('Mobile.maximum', { value: item.upperLimit }) : '' }}
     </p>
     <button v-if="item.exampleFileId && !images[item.exampleFileId]" type="button" class="text-button" @click="emit('preview', item.exampleFileId)">{{ t('Mobile.example') }}</button>
-    <img v-if="item.exampleFileId && images[item.exampleFileId]" class="evidence" :src="images[item.exampleFileId]" :alt="t('Mobile.example')" />
+    <Image v-if="item.exampleFileId && images[item.exampleFileId]" class="evidence" :width="160" :src="images[item.exampleFileId]" :alt="t('Mobile.example')" />
     <Radio.Group v-if="itemType(item) === 'choice'" class="choice-list" :value="answer(item.id)?.value" :disabled="locked"
       :aria-labelledby="`label-${item.id}`" @update:value="emit('answer', item.id, String($event))">
       <Radio v-for="option in item.options" :key="option" :value="option">{{ option }}</Radio>
@@ -41,7 +41,7 @@ function choose(id: string, event: Event) {
       </label>
       <p class="muted">{{ t('Mobile.imageHint') }}</p>
       <template v-if="answer(item.id)?.attachmentId">
-        <img v-if="images[answer(item.id)!.attachmentId!]" class="evidence" :src="images[answer(item.id)!.attachmentId!]" :alt="t('Mobile.attachment')" />
+        <Image v-if="images[answer(item.id)!.attachmentId!]" class="evidence" :width="160" :src="images[answer(item.id)!.attachmentId!]" :alt="t('Mobile.attachment')" />
         <button v-else type="button" class="text-button" @click="emit('preview', answer(item.id)!.attachmentId!)">{{ t('Mobile.preview') }}</button>
       </template>
     </div>

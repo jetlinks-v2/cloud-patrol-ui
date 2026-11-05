@@ -1,14 +1,15 @@
 <template>
 
   <div class="patrol-calendar">
-    <a-space>
+    <ProjectFilterBar>
       <a-month-picker v-model:value="month" :allow-clear="false" />
       <a-button :loading="loading" @click="reload">{{ t('Patrol.refresh') }}</a-button>
-    </a-space>
+    </ProjectFilterBar>
     <a-alert v-if="failed" type="error" :message="t('Patrol.loadFailed')" />
-    <a-descriptions v-if="result" bordered :column="4">
+    <a-descriptions v-if="result" bordered :column="2">
       <a-descriptions-item v-for="key in summaryKeys" :key="key" :label="t(`Patrol.calendar.${key}`)">{{ result.summary[key] }}</a-descriptions-item>
     </a-descriptions>
+    <p v-if="result">{{ t('Patrol.calendar.monthlyPointHint') }}</p>
     <a-spin :spinning="loading">
       <a-calendar :value="month" @panel-change="panelChange" @select="selectDate">
         <template #dateCellRender="{ current }">
@@ -18,8 +19,12 @@
             </div>
             <div v-if="days.get(current.format('YYYY-MM-DD'))!.shifts.length > 3">{{ t('Patrol.calendar.moreShifts', { count: days.get(current.format('YYYY-MM-DD'))!.shifts.length - 3 }) }}</div>
             <div v-if="!days.get(current.format('YYYY-MM-DD'))!.shifts.length">{{ t('Patrol.calendar.unscheduled') }}</div>
-            <div>{{ t('Patrol.calendar.progress') }} {{ days.get(current.format('YYYY-MM-DD'))!.completedCount }}/{{ days.get(current.format('YYYY-MM-DD'))!.expectedCount }}</div>
-            <a-tag :color="days.get(current.format('YYYY-MM-DD'))!.missedCount ? 'error' : 'default'">{{ t(`Patrol.calendar.status.${days.get(current.format('YYYY-MM-DD'))!.status}`) }}</a-tag>
+            <div class="calendar-points" :title="t('Patrol.calendar.pointProgress')" :aria-label="t('Patrol.calendar.pointProgressValue', {
+              completed: days.get(current.format('YYYY-MM-DD'))!.completedPointCount,
+              expected: days.get(current.format('YYYY-MM-DD'))!.pointCount,
+            })">{{ days.get(current.format('YYYY-MM-DD'))!.completedPointCount }}/{{ days.get(current.format('YYYY-MM-DD'))!.pointCount }}</div>
+            <div v-if="days.get(current.format('YYYY-MM-DD'))!.missedPointCount" class="calendar-exception">{{ t('Patrol.calendar.missedPointCount') }} {{ days.get(current.format('YYYY-MM-DD'))!.missedPointCount }}</div>
+            <div v-if="days.get(current.format('YYYY-MM-DD'))!.absentPointCount" class="calendar-exception">{{ t('Patrol.calendar.absentPointCount') }} {{ days.get(current.format('YYYY-MM-DD'))!.absentPointCount }}</div>
           </template>
         </template>
       </a-calendar>
@@ -38,15 +43,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import type { Dayjs } from 'dayjs'
-import { MonthPicker as AMonthPicker, Button as AButton, Space as ASpace, Calendar as ACalendar, Tag as ATag,
+import { MonthPicker as AMonthPicker, Button as AButton, Space as ASpace, Calendar as ACalendar,
   Descriptions as ADescriptions, DescriptionsItem as ADescriptionsItem, Alert as AAlert, Spin as ASpin, Drawer as ADrawer } from 'ant-design-vue'
 import CalendarDayDetails from '../../../components/CalendarDayDetails.vue'
+import ProjectFilterBar from '../../../components/ProjectFilterBar.vue'
 import { useCalendar } from '../../../composables/useCalendar'
 import { businessTime } from '../../../model/display'
 const { t } = useI18n()
 const { month, selectedDate, result, detail, days, loading, failed, dayLoading, dayFailed, exporting, exportFailed,
   reload, openDay, closeDay, exportDay } = useCalendar()
-const summaryKeys = ['scheduledDayCount', 'staffCount', 'rosterCount', 'taskCount', 'expectedCount', 'completedCount', 'missedCount', 'abnormalTaskCount'] as const
+const summaryKeys = ['scheduledDayCount', 'staffCount', 'pointCount', 'completedPointCount', 'missedPointCount', 'absentPointCount'] as const
 const time = (value: number) => businessTime(value).format('HH:mm')
 function panelChange(value: string | Dayjs) { if (typeof value !== 'string') month.value = value }
 function selectDate(date: Dayjs, info: { source: string }) {
@@ -56,4 +62,6 @@ function selectDate(date: Dayjs, info: { source: string }) {
 <style scoped>
 .patrol-calendar { display: flex; flex-direction: column; gap: var(--space-3, 16px); }
 .calendar-shift { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.calendar-points { font-size: 14px; font-weight: 600; }
+.calendar-exception { color: var(--ant-error-color, #ff4d4f); font-size: 12px; }
 </style>

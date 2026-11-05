@@ -8,11 +8,8 @@
     <a-alert v-if="saveFailed" type="error" show-icon :message="t('Patrol.saveFailed')" style="margin-bottom: 16px" />
     <a-config-provider :component-disabled="readonly || imageBusy">
       <a-form ref="form" :model="model" layout="vertical" :disabled="readonly || imageBusy">
-        <a-form-item :label="t('Patrol.projects.label')">
-          <ProjectTreeSelect v-model="model.projectId" disabled />
-        </a-form-item>
-        <a-form-item v-if="!model.projectId && !['points', 'posts', 'plans', 'rosters'].includes(resource)" name="ownerOrganizationId" :label="t('Patrol.projects.owner')" :rules="required">
-          <ProjectTreeSelect v-model="model.ownerOrganizationId" :projects-only="false" :disabled="!!model.id" />
+        <a-form-item v-if="resource !== 'warnings'" name="projectId" :label="t('Patrol.projects.label')" :rules="required">
+          <ProjectTreeSelect v-model="model.projectId" :disabled="!!model.id || !!point || !!inheritedCategory" />
         </a-form-item>
         <a-form-item
           name="name"
@@ -22,22 +19,18 @@
         /></a-form-item>
         <a-form-item v-if="resource === 'categories' && model.id" :label="t('Patrol.categoryId')"><a-input :value="model.id" disabled /></a-form-item>
         <a-form-item v-if="resource === 'categories'" name="parentId" :label="t('Patrol.parent')"
-          ><CategorySelect v-model="model.parentId" :excluded-id="model.id"
+          ><CategorySelect v-model="model.parentId" :excluded-id="model.id" :rows="categoryRows" :allowed-ids="parentCategoryIds"
         /></a-form-item>
         <template v-if="resource === 'points'">
-          <a-form-item name="code" :label="t('Patrol.code')" :rules="required"
-            ><a-input v-model:value="model.code" :maxlength="64"
+          <a-form-item name="code" :label="t('Patrol.code')"
+            ><a-input v-model:value="model.code" :maxlength="64" :placeholder="t(model.id ? 'Patrol.codeKeepExisting' : 'Patrol.codeAutoGenerate')"
           /></a-form-item>
           <a-form-item v-if="!model.id" name="categoryId" :label="t('Patrol.category')" :rules="required"
-            ><CategorySelect v-model="model.categoryId" enabled-only
+            ><CategorySelect v-model="model.categoryId" :rows="categoryRows" enabled-only
           /></a-form-item>
           <a-form-item v-else :label="t('Patrol.category')"><ConfigReference resource="categories" :id="model.categoryIds || model.categoryId" /></a-form-item>
-          <a-form-item :label="t('Patrol.tags')"><RemoteSelect resource="tags" v-model="model.tagIds" multiple /></a-form-item>
           <a-form-item :label="t('Patrol.location')"
             ><a-input v-model:value="model.location" :maxlength="255"
-          /></a-form-item>
-          <a-form-item :label="t('Patrol.nfc')"
-            ><a-input v-model:value="model.nfcCode" :maxlength="128"
           /></a-form-item>
         </template>
         <a-form-item v-if="resource === 'levels'" name="rule" :label="t('Patrol.rule')" :rules="ruleRules"><RuleSummary v-if="readonly" :rule="model.rule" /><RuleEditor v-else-if="model.rule" ref="ruleEditor" v-model="model.rule" /></a-form-item>
@@ -59,14 +52,11 @@
             @busy-change="imageBusy = $event"
             @update:model-value="model.items = $event"
         /></a-form-item>
-        <a-form-item v-if="resource === 'posts'" :label="t('Patrol.members')"
-          ><RemoteSelect resource="persons" v-model="model.userIds" multiple
-        /></a-form-item>
         <template v-if="resource === 'rosters'">
           <a-form-item :label="t('Patrol.shiftName')"><a-input v-model:value="model.shiftName" :maxlength="128" /></a-form-item>
           <a-form-item :label="t('Patrol.rest')"><a-switch v-model:checked="model.rest" /></a-form-item>
-          <a-form-item name="postId" :label="t('Patrol.post')" :rules="required"
-            ><RemoteSelect resource="posts" v-model="model.postId"
+          <a-form-item name="roleId" :label="t('Patrol.post')"
+            ><RemoteSelect resource="roles" v-model="model.roleId"
           /></a-form-item>
           <a-form-item name="userId" :label="t('Patrol.person')" :rules="required"
             ><RemoteSelect resource="persons" v-model="model.userId"
@@ -85,8 +75,8 @@
           <a-form-item v-if="!point" name="pointId" :label="t('Patrol.point')" :rules="required"
             ><RemoteSelect resource="points" v-model="model.pointId"
           /></a-form-item>
-          <a-form-item name="postId" :label="t('Patrol.post')" :rules="required"
-            ><RemoteSelect resource="posts" v-model="model.postId"
+          <a-form-item name="roleId" :label="t('Patrol.post')"
+            ><RemoteSelect resource="roles" v-model="model.roleId"
           /></a-form-item>
           <a-form-item name="standardId" :label="t('Patrol.standard')" :rules="required"
             ><RemoteSelect resource="standards" v-model="model.standardId"
@@ -98,12 +88,6 @@
           <a-form-item name="effectiveTo" :label="t('Patrol.effectiveTo')" :rules="required"
             ><a-date-picker v-model:value="model.effectiveTo" value-format="YYYY-MM-DD"
           /></a-form-item>
-          <a-form-item name="rosterPolicy" :label="t('Patrol.rosterPolicy')"
-            ><a-radio-group v-model:value="model.rosterPolicy"
-              ><a-radio value="optional">{{ t('Patrol.rosterOptional') }}</a-radio
-              ><a-radio value="required">{{ t('Patrol.rosterRequired') }}</a-radio></a-radio-group
-            ></a-form-item
-          >
           <a-alert v-if="model.levelId" type="info" :message="t('Patrol.levelRuleHint')" />
           <a-form-item v-else name="rule" :label="t('Patrol.rule')" :rules="ruleRules"
             ><RuleEditor v-if="model.rule" ref="ruleEditor" v-model="model.rule"
@@ -130,7 +114,7 @@
 <script setup lang="ts">
 import ProjectTreeSelect from './ProjectTreeSelect.vue'
 import ConfigReference from './ConfigReference.vue'
-import { reactive, ref, computed, provide } from 'vue'
+import { reactive, ref, computed, provide, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   ConfigProvider as AConfigProvider,
@@ -142,8 +126,6 @@ import {
   Alert as AAlert,
   Textarea as ATextarea,
   DatePicker as ADatePicker,
-  RadioGroup as ARadioGroup,
-  Radio as ARadio,
   Switch as ASwitch,
   Space as ASpace,
   Button as AButton,
@@ -165,6 +147,7 @@ const props = defineProps<{
   saveFailed?: boolean
   readonly?: boolean
   point?: ConfigEntity
+  categoryRows?: ConfigEntity[]
 }>()
 const emit = defineEmits<{ close: []; save: [value: ConfigEntity] }>()
 const { t } = useI18n()
@@ -172,7 +155,37 @@ const { t } = useI18n()
 const nameMaxLength = computed(() => ['standards', 'warnings'].includes(props.resource) ? 30 : 128)
 const model = reactive(draftOf(props.resource, props.value)),
   form = ref<FormInstance>()
-provide('patrolAttachmentOwner', computed(() => model.ownerOrganizationId))
+const editorProject = computed(() => model.projectId)
+const parentCategory = computed(() => props.resource === 'categories'
+  ? props.categoryRows?.find(row => row.id === model.parentId) : undefined)
+const pointCategory = computed(() => props.resource === 'points'
+  ? props.categoryRows?.find(row => row.id === model.categoryId) : undefined)
+const inheritedCategory = computed(() => parentCategory.value || pointCategory.value)
+// 已有分类不能更换项目，编辑时只允许选择同项目的父级。
+const parentCategoryIds = computed(() => model.id && props.categoryRows
+  ? props.categoryRows.filter(row => row.projectId === model.projectId).map(row => row.id!) : undefined)
+provide('patrolAttachmentProject', editorProject)
+provide('patrolEditorProject', editorProject)
+// 新增时项目属于表单，不改列表筛选；切换后清除原项目关联，防止提交串项目引用。
+watch(editorProject, () => {
+  if (model.id) return
+  if (parentCategory.value?.projectId !== model.projectId) model.parentId = undefined
+  if (pointCategory.value?.projectId !== model.projectId) model.categoryId = undefined
+  model.tagIds = []
+  model.userIds = []
+  model.roleId = undefined
+  model.userId = undefined
+  model.standardId = undefined
+  model.levelId = undefined
+  if (!props.point) model.pointId = undefined
+  model.items?.forEach(item => { item.exampleFileId = undefined })
+})
+// 子分类和新增点位均继承所选分类的项目，切换分类时同步项目且保留分类选择。
+watch(inheritedCategory, category => {
+  if (!category || model.id) return
+  model.projectId = category.projectId
+  model.projectName = category.projectName
+}, { immediate: true })
 const imageBusy = ref(false)
 const ruleEditor = ref<InstanceType<typeof RuleEditor>>()
 const ruleRules = [{ validator: async () => {

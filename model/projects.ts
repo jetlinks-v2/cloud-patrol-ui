@@ -8,11 +8,11 @@ export interface ProjectTreeNode {
   value: string; title: string; disabled: boolean; selectable: boolean; children: ProjectTreeNode[]
 }
 /** 仅保留服务端返回节点，不补查祖先；非项目置灰且不可选，仍保留展开层级。 */
-export function projectTree(nodes: OrganizationNode[], projectsOnly = true): ProjectTreeNode[] {
+export function projectTree(nodes: OrganizationNode[]): ProjectTreeNode[] {
   return nodes.map(node => {
     const type = typeof node.organizationType === 'object' ? node.organizationType?.value : node.organizationType
-    const disabled = projectsOnly && type !== 'project'
-    return { value: node.id, title: node.name, disabled, selectable: !disabled, children: projectTree(node.children ?? [], projectsOnly) }
+    const disabled = type !== 'project'
+    return { value: node.id, title: node.name, disabled, selectable: !disabled, children: projectTree(node.children ?? []) }
   })
 }
 export function findOrganization(nodes: OrganizationNode[], id?: string): OrganizationNode | undefined {
