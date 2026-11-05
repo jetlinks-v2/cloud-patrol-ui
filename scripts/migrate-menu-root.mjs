@@ -3,9 +3,10 @@ import { resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 import assert from 'node:assert/strict'
 
-// 仅增量移动巡更的既有定义，不调用 owner/_all，不修改角色、模板或资产授权。
+// 仅增量更新巡更定义，不调用 owner/_all，不修改角色、模板或资产授权。
 const {values} = parseArgs({options: {
   api: {type:'string'}, backup: {type:'string'}, apply: {type:'boolean', default:false},
+  'repair-data-access': {type:'boolean', default:false},
 }})
 assert(values.api && values.backup && process.env.PATROL_MENU_TOKEN,
   '需要 --api、--backup 和环境变量 PATROL_MENU_TOKEN；默认只预览，写入需 --apply')
@@ -43,12 +44,30 @@ root.children = groupIds.map(id => {
   assert([null, undefined, '', '-1', root.id].includes(group.parentId), `菜单 ${id} 已属于其他分组，停止迁移`)
   return restoreChildren({...group, parentId:root.id, ...(id === 'patrol-system' ? {sortIndex:99} : {})})
 })
+// 声明菜单支持数据权限不等于授予数据；实际可读范围仍由模板、角色和 AssetsHolder 决定。
+const repairedIds = new Set()
+if (values['repair-data-access']) {
+  const system = root.children.find(node => node.id === 'patrol-system')
+  for (const name of ['OrganizationType', 'User', 'Space', 'Customer', 'Dictionary']) {
+    const id = `patrol-${name}`
+    const page = system.children.find(node => node.id === id)
+    assert(page && page.code === `patrol/${name}`, `系统管理页面 ${id} 身份不符，停止修复`)
+    assert(page.assetType || page.assetTypes?.length, `页面 ${id} 缺少资产类型，停止修复`)
+    const support = typeof page.accessSupport === 'object' ? page.accessSupport?.value : page.accessSupport
+    assert(!support || support === 'support', `页面 ${id} 已有其他数据权限模式，停止修复`)
+    if (support !== 'support') {
+      page.accessSupport = 'support'
+      repairedIds.add(id)
+    }
+  }
+}
 const patrolIds = new Set(flatten(root.children).map(node => node.id))
 mkdirSync(resolve(values.backup), {recursive:true, mode:0o700})
 const stamp = new Date().toISOString().replaceAll(':','-')
 writeFileSync(resolve(values.backup, `${stamp}-before.json`), JSON.stringify(snapshot, null, 2), {mode:0o600})
 writeFileSync(resolve(values.backup, `${stamp}-patch.json`), JSON.stringify([root], null, 2), {mode:0o600})
 console.log(JSON.stringify({mode:values.apply ? 'apply' : 'preview', root:root.id,
+  repairedDataAccess: [...repairedIds],
   groups:root.children.map(({id, name, sortIndex}) => ({id, name, sortIndex}))}, null, 2))
 if (values.apply) {
   await request('/menu', [root], 'PATCH')
@@ -65,11 +84,16 @@ if (values.apply) {
     }
     for (const [key, value] of Object.entries(before)) {
       if (['path','level'].includes(key) || groupIds.includes(id) && key === 'parentId'
-        || id === 'patrol-system' && key === 'sortIndex') continue
+        || id === 'patrol-system' && key === 'sortIndex'
+        || repairedIds.has(id) && key === 'accessSupport') continue
       assert.deepEqual(current[key], value, `菜单 ${id} 的 ${key} 意外变化，请检查备份`)
+    }
+    if (repairedIds.has(id)) {
+      const support = typeof current.accessSupport === 'object' ? current.accessSupport?.value : current.accessSupport
+      assert.equal(support, 'support', `菜单 ${id} 数据权限声明未保存`)
     }
   }
   for (const id of groupIds) assert.equal(afterById.get(id)?.parentId, root.id)
   assert.equal(afterById.get('patrol-system')?.sortIndex, 99)
-  console.log('已验证：只调整巡更父级与系统管理顺序；原菜单及授权字段保持一致。')
+  console.log('已验证：仅更新巡更父级、顺序及指定页面的数据权限声明；原按钮及资产策略保持一致。')
 }
