@@ -1,7 +1,7 @@
 <template>
   <div class="mobile-project-filter">
-    <label for="patrol-mobile-project">{{ t('Patrol.projects.label') }}</label>
-    <TreeSelect id="patrol-mobile-project" :value="patrolProject" :tree-data="options" :placeholder="t('Patrol.projects.all')" allow-clear
+    <label :for="local ? 'patrol-mobile-editor-project' : 'patrol-mobile-project'">{{ t('Patrol.projects.label') }}</label>
+    <TreeSelect :id="local ? 'patrol-mobile-editor-project' : 'patrol-mobile-project'" :value="selectedValue" :tree-data="options" :placeholder="t('Mobile.chooseProject')" :allow-clear="!local"
       tree-default-expand-all show-search tree-node-filter-prop="title" :loading="loading" :disabled="disabled"
       :status="failed ? 'error' : undefined" style="width:100%" @update:value="select" />
     <div v-if="failed" class="project-load-error" role="alert"><span>{{ t('Patrol.projects.failed') }}</span><Button @click="load">{{ t('Mobile.refresh') }}</Button></div>
@@ -14,23 +14,26 @@ import { useI18n } from 'vue-i18n'
 import { request } from '../transport'
 import { patrolProject } from '../projectScope'
 import { projectTree, findOrganization, type OrganizationNode } from '../../model/projects'
-defineProps<{ disabled?: boolean }>()
+const props = defineProps<{ disabled?: boolean; local?: boolean; value?: string }>()
+const emit = defineEmits<{ 'update:value': [value?: string] }>()
 const { t } = useI18n()
 const nodes = ref<OrganizationNode[]>([]), loading = ref(false), failed = ref(false)
 const options = computed(() => projectTree(nodes.value))
+const selectedValue = computed(() => props.local ? props.value : patrolProject.value)
 async function load() {
   loading.value = true; failed.value = false
   // 重新取授权树时不携带旧项目筛选，撤权或改为普通组织后仍可恢复选择。
   try { nodes.value = await request<OrganizationNode[]>('/park/patrol/projects/_tree', 'GET', undefined, '')
-    const selected = findOrganization(nodes.value, patrolProject.value)
-    if (patrolProject.value && (!selected || projectTree([selected])[0].disabled)) patrolProject.value = undefined
-  } catch { failed.value = true; nodes.value = []; patrolProject.value = undefined }
+    const selected = findOrganization(nodes.value, selectedValue.value)
+    if (selectedValue.value && (!selected || projectTree([selected])[0].disabled)) select(undefined)
+  } catch { failed.value = true; nodes.value = []; select(undefined) }
   finally { loading.value = false }
 }
 function select(value: unknown) {
-  if (typeof value !== 'string' || !value) { patrolProject.value = undefined; return }
+  const update = (id?: string) => props.local ? emit('update:value', id) : (patrolProject.value = id)
+  if (typeof value !== 'string' || !value) { update(undefined); return }
   const node = findOrganization(nodes.value, value)
-  if (node && !projectTree([node])[0].disabled) patrolProject.value = value
+  if (node && !projectTree([node])[0].disabled) update(value)
 }
 onMounted(load)
 </script>

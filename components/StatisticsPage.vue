@@ -28,7 +28,7 @@
               <span>{{ t(`Patrol.overview.${rate.key}`) }}</span>
               <strong>{{ percent(report.total[rate.key]) }}</strong>
               <a-progress v-if="report.total[rate.key] != null" :percent="report.total[rate.key] ?? 0" :show-info="false" size="small" />
-              <small>{{ rateBase(report.total, rate.key) }}</small>
+              <small>{{ rateBase(report.total) }}</small>
             </button>
           </a-tooltip>
         </div>
@@ -39,12 +39,12 @@
         </a-card>
         <a-card class="section" :title="t('Patrol.overview.projects')" size="small">
           <template #extra><a-button type="link" @click="openDrill()">{{ t('Patrol.overview.taskDetails') }}</a-button></template>
-          <a-table :data-source="report.projects" :columns="projectColumns" row-key="projectId" size="middle" :pagination="false" :scroll="{x:1850}">
+          <a-table :data-source="projects" :columns="projectColumns" row-key="projectId" size="middle" :pagination="false" :scroll="{x:1700}">
             <template #headerCell="{column}"><a-tooltip v-if="isRate(column.key)" :title="t(`Patrol.overview.${column.key}Hint`)">{{ column.title }}</a-tooltip><template v-else>{{ column.title }}</template></template>
             <template #bodyCell="{column, record}">
               <template v-if="column.key === 'projectName'">{{ record.projectName || t('Patrol.overview.unknownProject') }}</template>
               <template v-else-if="isRate(column.key)">
-                <a-tooltip :title="rateBase(record.counts, column.key)"><a-button type="link" size="small" @click="openDrill(rateMetric(column.key), record.projectId)">{{ percent(record.counts[column.key]) }}</a-button></a-tooltip>
+                <a-tooltip :title="rateBase(record.counts)"><a-button type="link" size="small" @click="openDrill('due', record.projectId)">{{ percent(record.counts[column.key]) }}</a-button></a-tooltip>
               </template>
               <a-button v-else-if="metricFor(column.key)" type="link" size="small" @click="openDrill(metricFor(column.key), record.projectId)">{{ countValue(record.counts, column.key) }}</a-button>
             </template>
@@ -54,7 +54,7 @@
           <a-table :data-source="report.days" :columns="dayColumns" row-key="date" size="small" :pagination="{pageSize:7, showSizeChanger:false}" :scroll="{x:1100}">
             <template #headerCell="{column}"><a-tooltip v-if="isRate(column.key)" :title="t(`Patrol.overview.${column.key}Hint`)">{{ column.title }}</a-tooltip><template v-else>{{ column.title }}</template></template>
             <template #bodyCell="{column,record}">
-              <a-tooltip v-if="isRate(column.key)" :title="rateBase(record.counts,column.key)"><a-button type="link" size="small" @click="openDrill(rateMetric(column.key), undefined, record.date)">{{ percent(record.counts[column.key]) }}</a-button></a-tooltip>
+              <a-tooltip v-if="isRate(column.key)" :title="rateBase(record.counts)"><a-button type="link" size="small" @click="openDrill('due', undefined, record.date)">{{ percent(record.counts[column.key]) }}</a-button></a-tooltip>
               <a-button v-else-if="metricFor(column.key)" type="link" size="small" @click="openDrill(metricFor(column.key), undefined, record.date)">{{ countValue(record.counts, column.key) }}</a-button>
             </template>
           </a-table>
@@ -100,7 +100,7 @@ import { useStatisticsOverview } from '../composables/statistics/useStatisticsOv
 import type { StatisticsMetric, StatisticsCounts, StatisticsPointDay } from '../api/statistics'
 const StatisticsFactDetails = defineAsyncComponent(() => import('./statistics/StatisticsFactDetails.vue'))
 const {t} = useI18n()
-const {range, categoryIds, levelIds, report, loading, failed, exporting, exportFailed, reload, reset, exportReport,
+const {range, categoryIds, levelIds, report, projects, loading, failed, exporting, exportFailed, reload, reset, exportReport,
   drillOpen, drillLoading, drillFailed, drillRows, drillTotal, drillPage, drillMetric, drillRange, loadDrill, openDrill,
   detailOpen, detailLoading, detailFailed, detail, selectedPoint, openDetail} = useStatisticsOverview()
 type Metric = {key: keyof StatisticsCounts; metric: StatisticsMetric; tone?: string}
@@ -108,14 +108,12 @@ const metrics: Metric[] = [{key:'expected',metric:'all'}, {key:'completed',metri
   {key:'overdue',metric:'overdue',tone:'danger'}, {key:'notDue',metric:'notDue'}]
 const states: Metric[] = [{key:'completedPoints',metric:'finished'}, {key:'ongoingPoints',metric:'ongoing'},
   {key:'pendingPoints',metric:'pending'}, {key:'missedPoints',metric:'missed'}, {key:'absentPoints',metric:'absent'}, {key:'abnormalPoints',metric:'anomaly'}]
-type RateKey = 'progressRate' | 'dueFulfillmentRate'
-const rates: {key: RateKey; metric: StatisticsMetric}[] = [{key:'progressRate',metric:'all'}, {key:'dueFulfillmentRate',metric:'due'}]
-const isRate = (key: unknown): key is RateKey => key === 'progressRate' || key === 'dueFulfillmentRate'
-const rateMetric = (key: RateKey): StatisticsMetric => key === 'dueFulfillmentRate' ? 'due' : 'all'
+type RateKey = 'dueFulfillmentRate'
+const rates: {key: RateKey; metric: StatisticsMetric}[] = [{key:'dueFulfillmentRate',metric:'due'}]
+const isRate = (key: unknown): key is RateKey => key === 'dueFulfillmentRate'
 const percent = (value?: number | null) => value == null ? '—' : `${value.toFixed(2)}%`
-const rateBase = (counts: StatisticsCounts, key: RateKey) => key === 'dueFulfillmentRate'
-  ? counts.dueExpected > 0 ? `${counts.dueCompleted} / ${counts.dueExpected} · ${t('Patrol.overview.dueBasis')}` : t('Patrol.overview.noDue')
-  : counts.expected > 0 ? `${counts.completed} / ${counts.expected} · ${t('Patrol.overview.progressBasis')}` : t('Patrol.overview.noExpected')
+const rateBase = (counts: StatisticsCounts) => counts.dueExpected > 0
+  ? `${counts.dueCompleted} / ${counts.dueExpected} · ${t('Patrol.overview.dueBasis')}` : t('Patrol.overview.noDue')
 // 百分比由后端完整计数计算。排序只改变项目展示顺序，不将无分母数据当成零履约。
 const rateColumns = () => rates.map(rate => ({...column(rate.key), width:150, dataIndex:['counts',rate.key],
   sorter:(a: {counts:StatisticsCounts},b: {counts:StatisticsCounts}) => (a.counts[rate.key] ?? -1) - (b.counts[rate.key] ?? -1)}))
@@ -139,7 +137,7 @@ const stateColor = (state: string) => ({completed:'green',missed:'orange',absent
 .metric {text-align:left;background:var(--ant-color-bg-container,#fff);border:1px solid var(--ant-color-border-secondary,#f0f0f0);border-radius:8px;padding:20px;cursor:pointer;color:inherit}
 .metric:hover {border-color:var(--ant-color-primary,#1677ff)} .metric span,.metric strong,.metric small {display:block}.metric strong {font-size:32px;line-height:1.5;font-weight:600}.metric small {color:#8c8c8c}.success strong {color:#389e0d}.danger strong {color:#cf1322}
 .section {margin-top:16px}.states {display:flex;flex-wrap:wrap;gap:10px}.explanation {margin:12px 0 0}
-.rate-summary {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.rate-summary {display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}
 .rate-panel {display:grid;grid-template-columns:1fr auto;gap:8px;text-align:left;border:1px solid var(--ant-color-border-secondary,#f0f0f0);border-radius:8px;background:var(--ant-color-bg-container,#fff);padding:16px 20px;color:inherit;cursor:pointer}
 .rate-panel:hover {border-color:var(--ant-color-primary,#1677ff)}.rate-panel strong {font-size:24px}.rate-panel :deep(.ant-progress),.rate-panel small {grid-column:1/-1}.rate-panel small {color:var(--ant-color-text-secondary,#8c8c8c)}
 @media(max-width:900px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -18,8 +18,8 @@ export const queryTasks = (query: Query) =>
   request.post<Page<Task>>(`${prefix}/tasks/_query`, query)
 export const queryRecordPeriods = (query: Query) =>
   request.post<Page<Task>>(`${prefix}/record-periods/_query`, query)
-export const queryTaskGroups = (query: Query) =>
-  request.post<Page<TaskGroup>>(`${prefix}/task-groups/_query`, query)
+export const queryTaskGroups = (query: Query, options?: { signal?: AbortSignal }) =>
+  request.post<Page<TaskGroup>>(`${prefix}/task-groups/_query`, query, options)
 /** 当前条件完整导出，由后端统一处理权限和数量上限。 */
 export async function exportTaskGroups(query: Query) {
   const response = await request.post<ArrayBuffer>(`${prefix}/task-groups/export`, query, { responseType: 'arraybuffer' })

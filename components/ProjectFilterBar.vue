@@ -5,7 +5,7 @@
       <ProjectTreeSelect :model-value="selected" :placeholder="t('Patrol.projects.all')" @update:model-value="select" />
     </label>
     <slot />
-    <a-button class="patrol-mobile-entry" @click="openMobile">{{ t('Patrol.mobileEntry') }}</a-button>
+    <a-button v-if="showMobileEntry" class="patrol-mobile-entry" @click="openMobile">{{ t('Patrol.mobileEntry') }}</a-button>
   </div>
 </template>
 <script setup lang="ts">
@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 import ProjectTreeSelect from './ProjectTreeSelect.vue'
 import { useProjects } from '../composables/useProjects'
 import { useMobileEntry } from '../composables/useMobileEntry'
+defineProps<{ showMobileEntry?: boolean }>()
 const { t } = useI18n()
 const { selected, select } = useProjects()
 const { openMobile } = useMobileEntry()

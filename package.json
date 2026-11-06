@@ -6,6 +6,7 @@
   "type": "module",
   "main": "index.ts",
   "dependencies": {
+    "jsencrypt": "3.3.2",
     "jsqr": "1.4.0"
   },
   "scripts": {

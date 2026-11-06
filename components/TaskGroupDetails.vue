@@ -4,7 +4,6 @@
     <a-descriptions-item :label="t('Patrol.belongDate')">{{ group.belongDate }}</a-descriptions-item>
     <a-descriptions-item :label="t('Patrol.point')">{{ group.pointName }}</a-descriptions-item>
     <a-descriptions-item :label="t('Patrol.post')">{{ group.roleId ? group.roleName : t('Patrol.allStaffPatrol') }}</a-descriptions-item>
-    <a-descriptions-item :label="t('Patrol.taskPeriod')" :span="2">{{ dateTime(group.startTime) }} ～ {{ dateTime(group.endTime) }}</a-descriptions-item>
     <a-descriptions-item :label="t('Patrol.category')">{{ group.categoryName || '—' }}</a-descriptions-item>
     <a-descriptions-item :label="t('Patrol.level')">{{ group.levelName || '—' }}</a-descriptions-item>
     <a-descriptions-item :label="t('Patrol.progress')">{{ group.completedCount ?? 0 }}/{{ group.requiredCount ?? 0 }}</a-descriptions-item>

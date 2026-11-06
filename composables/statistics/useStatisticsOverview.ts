@@ -1,15 +1,30 @@
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { businessTime } from '../../model/display'
 import { selectedProject } from '../useProjects'
 import { queryStatistics, queryStatisticsTasks, queryStatisticsDetail, exportStatistics,
   type StatisticsReport, type StatisticsRange, type StatisticsMetric, type StatisticsPointDay, type StatisticsDetail } from '../../api/statistics'
 
+/** 默认上月同日至今天，使用业务时区；月底自动落到上月最后一天。 */
+export function defaultStatisticsRange(now = Date.now()): [string, string] {
+  const end = businessTime(now)
+  return [end.subtract(1, 'month').format('YYYY-MM-DD'), end.format('YYYY-MM-DD')]
+}
+
+/** 项目按到期履约率降序，同率优先展示应巡量大的项目；无已到期任务排在最后。 */
+export function compareProjectFulfillment(a: StatisticsReport['projects'][number], b: StatisticsReport['projects'][number]) {
+  const left = a.counts.dueFulfillmentRate, right = b.counts.dueFulfillmentRate
+  if (left == null && right != null) return 1
+  if (right == null && left != null) return -1
+  return (right ?? 0) - (left ?? 0) || b.counts.expected - a.counts.expected
+    || (a.projectName || '').localeCompare(b.projectName || '', 'zh-CN') || a.projectId.localeCompare(b.projectId)
+}
+
 /** 所有区域消费同一次查询快照；筛选变化立即清除旧报表和下钻，晚到响应不能覆盖当前范围。 */
 export function useStatisticsOverview() {
-  const today = () => businessTime().format('YYYY-MM-DD')
-  const range = ref<[string, string]>([today(), today()])
+  const range = ref<[string, string]>(defaultStatisticsRange())
   const categoryIds = ref<string[]>([]), levelIds = ref<string[]>([])
   const report = ref<StatisticsReport>(), snapshot = ref<StatisticsRange>()
+  const projects = computed(() => [...(report.value?.projects || [])].sort(compareProjectFulfillment))
   const loading = ref(false), failed = ref(false), exporting = ref(false), exportFailed = ref(false)
   const drillOpen = ref(false), drillLoading = ref(false), drillFailed = ref(false)
   const drillRows = ref<StatisticsPointDay[]>([]), drillTotal = ref(0), drillPage = ref(1)
@@ -67,10 +82,10 @@ export function useStatisticsOverview() {
     try { await exportStatistics({...snapshot.value}) } catch { exportFailed.value = true }
     finally { exporting.value = false }
   }
-  function reset() { range.value = [today(), today()]; categoryIds.value = []; levelIds.value = [] }
+  function reset() { range.value = defaultStatisticsRange(); categoryIds.value = []; levelIds.value = [] }
   watch([range, categoryIds, levelIds], reload, {immediate: true})
   onBeforeUnmount(() => { version++; drillVersion++; detailVersion++ })
-  return {range, categoryIds, levelIds, report, snapshot, loading, failed, exporting, exportFailed, reload, reset, exportReport,
+  return {range, categoryIds, levelIds, report, projects, snapshot, loading, failed, exporting, exportFailed, reload, reset, exportReport,
     drillOpen, drillLoading, drillFailed, drillRows, drillTotal, drillPage, drillMetric, drillRange, loadDrill, openDrill,
     detailOpen, detailLoading, detailFailed, detail, selectedPoint, openDetail}
 }

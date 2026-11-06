@@ -3,6 +3,7 @@ import { businessTime } from '../model/display'
 import { canApplyMissed, missedState, type MissedItem, type MissedEvent } from '../model/missed'
 import { myMissed, applyMyMissed, withdrawMyMissed, myMissedHistory } from './api'
 import { resolveContext } from './transport'
+import { patrolProject } from './projectScope'
 /** 手机漏检独立查询范围，不复用“今日可巡任务”冒充历史漏检。 */
 export function useMobileMissed() {
   const from = ref(businessTime().subtract(6, 'day').format('YYYY-MM-DD')), to = ref(businessTime().format('YYYY-MM-DD'))
@@ -14,12 +15,19 @@ export function useMobileMissed() {
   const submittable = computed(() => chosen.value.length > 0 && chosen.value.every(canApplyMissed))
   function fail(cause: unknown) { error.value = cause instanceof Error ? cause.message : 'Mobile.requestFailed' }
   async function load() {
+    const projectId = patrolProject.value
+    if (!patrolProject.value) { rows.value = []; selection.value = []; return }
     if (loading.value || saving.value) return
     if (!from.value || !to.value || to.value < from.value || businessTime(Date.parse(to.value + 'T00:00:00+08:00')).diff(businessTime(Date.parse(from.value + 'T00:00:00+08:00')), 'day') > 30) {
       error.value = 'Patrol.missed.range'; return
     }
     loading.value = true; error.value = ''; selection.value = []
-    try { userId.value = (await resolveContext()).userId; rows.value = await myMissed(from.value, to.value) }
+    try {
+      userId.value = (await resolveContext()).userId
+      if (patrolProject.value !== projectId) return
+      const data = await myMissed(from.value, to.value)
+      if (patrolProject.value === projectId) rows.value = data
+    }
     catch (cause) { fail(cause); rows.value = [] }
     finally { loading.value = false }
   }

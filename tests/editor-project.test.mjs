@@ -19,8 +19,19 @@ const api = await import(moduleUrl((await compile('../api/patrol.ts')).replace("
 const pointApi = await import(moduleUrl((await compile('../api/points.ts')).replace("'./request'", JSON.stringify(adapter)).replace('"./request"', JSON.stringify(adapter))))
 const { calls, setListProject } = await import(adapter)
 
+test('巡更记录分页传递取消信号，同时保留项目筛选头', async () => {
+  calls.length = 0
+  setListProject('record-project')
+  const controller = new AbortController()
+  await api.queryTaskGroups({ pageIndex: 0, pageSize: 96 }, { signal: controller.signal })
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].options.signal, controller.signal)
+  assert.equal(calls[0].options.headers['X-Patrol-Project'], 'record-project')
+})
+
 test('新增表单的项目独立于列表筛选，保存、关联候选和图片使用表单所属项目', async () => {
   calls.length = 0
+  setListProject('list-project')
   await api.saveConfig('levels', { name: 'Level', projectId: 'editor-project' })
   await api.queryConfig('standards', {}, 'editor-project')
   await api.queryPeople({}, 'editor-project')

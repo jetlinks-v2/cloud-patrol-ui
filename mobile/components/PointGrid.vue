@@ -5,11 +5,11 @@ import { Input, Select, Spin } from 'ant-design-vue'
 import type { ConfigEntity } from '../../api/types'
 import type { MobileTask } from '../model'
 import { pointGroups, type PointGroup } from '../points'
-const props = defineProps<{ rows: MobileTask[]; categories: ConfigEntity[]; mine: boolean; loading: boolean; now: number }>()
+const props = defineProps<{ rows: MobileTask[]; categories: ConfigEntity[]; mine: boolean; loading: boolean; now: number; includeEnded?: boolean }>()
 const emit = defineEmits<{ mine: [value: boolean]; select: [value: PointGroup] }>()
 const { t } = useI18n()
 const keyword = ref(''), category = ref<string>()
-const points = computed(() => pointGroups(props.rows, keyword.value, category.value || '', props.categories, props.now))
+const points = computed(() => pointGroups(props.rows, keyword.value, category.value || '', props.categories, props.now, props.includeEnded))
 const options = computed(() => props.categories.map(item => ({ label: item.name, value: item.id })))
 </script>
 <template>

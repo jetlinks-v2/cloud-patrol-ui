@@ -1,3 +1,3 @@
 import { ref } from 'vue'
-/** 业务项目筛选与 SaaS 应用/技术项目上下文分开；服务端仍校验已授权树。 */
-export const patrolProject = ref<string | undefined>(new URLSearchParams(location.search).get('patrolProjectId') || undefined)
+/** 进入H5后显式选择业务项目；不按入口参数自动查询全部或预选项目。 */
+export const patrolProject = ref<string>()

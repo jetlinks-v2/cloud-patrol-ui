@@ -18,7 +18,7 @@ const result = await build({
 })
 const module={exports:{}}
 new Function('require','module','exports',result.outputFiles[0].text)(createRequire(import.meta.url),module,module.exports)
-const {useStatisticsOverview}=module.exports
+const {useStatisticsOverview,defaultStatisticsRange,compareProjectFulfillment}=module.exports
 const tick=()=>new Promise(setImmediate)
 const ok=result=>({success:true,result})
 
@@ -62,4 +62,24 @@ test('failed report clears previous totals and disables export',async()=>{
   globalThis.__statistics.query=async()=>{throw new Error('unavailable')}
   await s.reload();await s.exportReport()
   assert.equal(s.failed.value,true);assert.equal(s.report.value,undefined);assert.equal(exports,0)
+})
+
+
+test('default and reset cover the previous calendar month through today in Shanghai',async()=>{
+  assert.deepEqual(defaultStatisticsRange(Date.parse('2026-11-06T04:00:00Z')), ['2026-10-06','2026-11-06'])
+  assert.deepEqual(defaultStatisticsRange(Date.parse('2026-03-31T04:00:00Z')), ['2026-02-28','2026-03-31'])
+  assert.deepEqual(defaultStatisticsRange(Date.parse('2026-11-05T18:00:00Z')), ['2026-10-06','2026-11-06'])
+  globalThis.__statistics={project:'p1',query:async()=>ok({projects:[]})}
+  const s=useStatisticsOverview()
+  assert.deepEqual(s.range.value,defaultStatisticsRange())
+  s.range.value=['2026-01-01','2026-01-02'];s.reset()
+  assert.deepEqual(s.range.value,defaultStatisticsRange())
+  await tick()
+})
+
+test('project ranking is weighted by the actual due rate, with no-due projects last',()=>{
+  const project=(id,rate,expected)=>({projectId:id,projectName:id,counts:{dueFulfillmentRate:rate,expected}})
+  const rows=[project('none',null,1000),project('zero',0,100),project('small',90,10),project('large',90,200),project('best',100,20)]
+  assert.deepEqual([...rows].sort(compareProjectFulfillment).map(x=>x.projectId),['best','large','small','zero','none'])
+  assert.equal(rows[0].projectId,'none')
 })
