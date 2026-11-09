@@ -1,4 +1,8 @@
 export const zh = {
+  welcome: '欢迎使用', passwordPlaceholder: '请输入密码',
+  heroTitle: '每一次巡更，都有迹可循', heroHint: '细致巡检，守护每一天', quickEntries: '常用服务',
+  entryHints: { tasks: '查看点位，完成检查', manage: '点位信息与二维码', history: '回看每一次巡更', missed: '申报与处理进度' },
+  loginWorkplace: '员工工作台', loginFootnote: '应用账号 · 项目权限 · 跨端协同', loginDomainPlaceholder: '请输入项目编码', loginAccountPlaceholder: '请输入账号',
   employeeLogin: '员工登录', loginHint: '使用当前项目的 SaaS 员工账号', loginDomain: '项目编码', loginAccount: '员工账号',
   loginPassword: '密码', loginCaptcha: '验证码', refreshCaptcha: '刷新验证码', login: '登录', logout: '退出',
   loginRequired: '请填写项目编码、员工账号、密码及验证码', loginDomainMismatch: '账号后缀需与项目编码一致',
@@ -51,6 +55,10 @@ export const zh = {
   draftHint: '离开本页会丢失未提交内容。', retry: '重新加载', evidenceRequired: '需附图',
 }
 export const en: { [K in keyof typeof zh]: typeof zh[K] extends string ? string : Record<keyof typeof zh[K], string> } = {
+  welcome: 'Welcome', passwordPlaceholder: 'Enter password',
+  heroTitle: 'Every patrol leaves a trace', heroHint: 'Care for every point, every day', quickEntries: 'Quick access',
+  entryHints: { tasks: 'Inspect assigned points', manage: 'Point details and QR codes', history: 'Review inspection records', missed: 'Reports and their progress' },
+  loginWorkplace: 'Employee workspace', loginFootnote: 'Application accounts · Project access · Connected work', loginDomainPlaceholder: 'Enter project code', loginAccountPlaceholder: 'Enter account',
   employeeLogin: 'Employee sign in', loginHint: 'Use your SaaS employee account for this project', loginDomain: 'Project code', loginAccount: 'Employee account',
   loginPassword: 'Password', loginCaptcha: 'Verification code', refreshCaptcha: 'Refresh verification code', login: 'Sign in', logout: 'Sign out',
   loginRequired: 'Enter the project code, account, password and verification code', loginDomainMismatch: 'Account suffix must match the project code',

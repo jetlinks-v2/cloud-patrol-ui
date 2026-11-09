@@ -34,7 +34,7 @@ onMounted(() => { if (!hosted) void start() })
 </script>
 
 <template>
-  <ConfigProvider :theme="{ token: { colorPrimary: '#6ca95b', borderRadius: 6 } }">
+  <ConfigProvider :theme="{ token: { colorPrimary: '#2979ff', borderRadius: 8 } }">
     <div v-if="!ready" class="auth-loading"><Spin :tip="t('Mobile.loading')"><div style="height: 80px" /></Spin></div>
     <section v-else-if="configError" class="patrol-config-error panel"><Alert type="error" show-icon :message="te(configError) ? t(configError) : configError" /><Button block @click="start">{{ t('Mobile.retry') }}</Button></section>
     <App v-else-if="hosted || authState.session && authState.authorization" :standalone="!hosted" :logging-out="loggingOut" @logout="signOut" />

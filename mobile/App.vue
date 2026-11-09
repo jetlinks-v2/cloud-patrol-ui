@@ -98,7 +98,7 @@ onUnmounted(() => {
 })
 </script>
 <template>
-  <ConfigProvider :theme="{ token: { colorPrimary: '#6ca95b', borderRadius: 6 } }">
+  <ConfigProvider :theme="{ token: { colorPrimary: '#2979ff', borderRadius: 8 } }">
     <div class="mobile-patrol" :class="{ 'keyboard-open': keyboardOpen }">
       <header class="app-header">
         <button type="button" class="header-back" :aria-label="t('Mobile.back')" :disabled="locked || missedBusy || managementBusy" @click="back"><span /></button>
