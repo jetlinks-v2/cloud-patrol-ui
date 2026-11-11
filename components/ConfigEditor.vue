@@ -18,7 +18,7 @@
           ><a-input v-model:value="model.name" :maxlength="nameMaxLength"
         /></a-form-item>
         <a-form-item v-if="resource === 'categories' && model.id" :label="t('Patrol.categoryId')"><a-input :value="model.id" disabled /></a-form-item>
-        <a-form-item v-if="resource === 'categories'" name="parentId" :label="t('Patrol.parent')"
+        <a-form-item v-if="resource === 'categories'" name="parentId" :label="t('Patrol.parent')" :extra="t('Patrol.categoryDepthHint')"
           ><CategorySelect v-model="model.parentId" :excluded-id="model.id" :rows="categoryRows" :allowed-ids="parentCategoryIds"
         /></a-form-item>
         <template v-if="resource === 'points'">
@@ -139,6 +139,7 @@ import RuleSummary from './RuleSummary.vue'
 import TimestampInput from './TimestampInput.vue'
 import { draftOf } from '../model/resources'
 import { standardError } from '../model/standards'
+import { categoryParentIds } from '../model/categories'
 import type { ConfigEntity, Resource } from '../api/types'
 const props = defineProps<{
   resource: Resource
@@ -162,8 +163,8 @@ const pointCategory = computed(() => props.resource === 'points'
   ? props.categoryRows?.find(row => row.id === model.categoryId) : undefined)
 const inheritedCategory = computed(() => parentCategory.value || pointCategory.value)
 // 已有分类不能更换项目，编辑时只允许选择同项目的父级。
-const parentCategoryIds = computed(() => model.id && props.categoryRows
-  ? props.categoryRows.filter(row => row.projectId === model.projectId).map(row => row.id!) : undefined)
+const parentCategoryIds = computed(() => props.categoryRows
+  ? categoryParentIds(props.categoryRows, model) : [])
 provide('patrolAttachmentProject', editorProject)
 provide('patrolEditorProject', editorProject)
 // 新增时项目属于表单，不改列表筛选；切换后清除原项目关联，防止提交串项目引用。

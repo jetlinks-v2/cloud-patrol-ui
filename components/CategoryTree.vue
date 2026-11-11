@@ -40,7 +40,7 @@ function select(keys: Key[]) { emit('select', keys.length ? String(keys[0]) : un
 .category-tree :deep(.ant-tree-title) { display:block; }
 .category-node { display:flex; align-items:center; gap:4px; min-width:0; }
 .category-node-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.category-node-actions { display:flex; align-items:center; opacity:0; pointer-events:none; }
+.category-node-actions { display:flex; align-items:center; gap:8px; opacity:0; pointer-events:none; }
 .category-tree :deep(.ant-tree-treenode:hover) .category-node-actions,
 .category-tree :deep(.ant-tree-treenode:focus-within) .category-node-actions { opacity:1; pointer-events:auto; }
 @media (hover:none) { .category-node-actions { opacity:1; pointer-events:auto; } }

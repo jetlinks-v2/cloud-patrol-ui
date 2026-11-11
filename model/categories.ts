@@ -38,3 +38,29 @@ export function filterCategoryTree(nodes: CategoryNode[], keyword: string): Cate
     return children.length ? [{ ...node, children }] : []
   })
 }
+
+export const MAX_CATEGORY_DEPTH = 3
+/** 按完整授权树定位真实层级；父级不可见时不将它误当一级供新增下级。 */
+export function categoryDepth(rows: ConfigEntity[], id?: string): number {
+  const byId = new Map(rows.map(row => [row.id, row]))
+  const visited = new Set<string>()
+  let depth = 0, current = id
+  while (current) {
+    const row = byId.get(current)
+    if (!row || visited.has(current)) return Infinity
+    visited.add(current); depth++; current = row.parentId
+  }
+  return depth
+}
+
+/** 移动分类时连同子树计算三级限制；原父级保留可选，历史深层节点仍可正常编辑。 */
+export function categoryParentIds(rows: ConfigEntity[], current?: ConfigEntity): string[] {
+  const subtree = categoryDescendants(rows, current?.id)
+  const original = rows.find(row => row.id === current?.id)
+  const depths = subtree.map(id => categoryDepth(rows, id) - categoryDepth(rows, current?.id) + 1)
+  const height = depths.length ? Math.max(...depths) : 1
+  return rows.filter(row => row.id && !subtree.includes(row.id)
+    && (!current?.id || row.projectId === current.projectId)
+    && (row.id === original?.parentId || categoryDepth(rows, row.id) + height <= MAX_CATEGORY_DEPTH))
+    .map(row => row.id!)
+}

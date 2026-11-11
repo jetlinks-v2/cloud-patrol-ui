@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { Input, Radio, Image } from 'ant-design-vue'
+import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Answer, CheckItem } from '../../api/types'
 import { itemType } from '../../model/standards'
 const props = defineProps<{ items: CheckItem[]; answers: Answer[]; errors: Record<string, string>; images: Record<string, string>; locked: boolean }>()
 const emit = defineEmits<{ answer: [id: string, value: string]; upload: [id: string, file: File]; preview: [id: string] }>()
 const { t } = useI18n()
+watch(() => [props.items, props.answers] as const, ([items, answers]) => {
+  const ids = [...items.map(row => row.exampleFileId), ...answers.map(row => row.attachmentId)]
+  for (const id of new Set(ids.filter((id): id is string => !!id))) if (!props.images[id]) emit('preview', id)
+}, { immediate: true, deep: true })
 const answer = (id: string) => props.answers.find(item => item.itemId === id)
 function choose(id: string, event: Event) {
   const input = event.target as HTMLInputElement

@@ -22,6 +22,20 @@ const system = {id: 'patrol-system', code: 'patrol/system', name: '系统管理'
 const patrol = {id: 'cloud-patrol', code:'cloud-patrol', name:'智能巡更', url:'/park/patrol', children: [system, group]}
 const other = {id:'other', code:'other', name:'其他系统', url:'/other', children:[{code:'other/page'}]}
 
+test('旧预警配置在项目及独立应用导航均移除，其他菜单权限保持原样', () => {
+  const warning = {id:'patrol-warnings', code:'patrol/warnings', name:'异常预警配置'}
+  const base = {...group, children:[page, warning]}
+  for (const applicationScope of [undefined, '__jetlinks_project__', 'business_application:__jetlinks_project__', 'patrol-app']) {
+    const input = structuredClone([other, {...patrol, children:[base, system]}]), before = structuredClone(input)
+    const output = filter(input, {applicationScope})
+    assert(!JSON.stringify(output).includes('patrol-warnings'))
+    const flattened = applicationScope === 'patrol-app' ? output : output[1].children
+    assert.deepEqual(flattened.find(menu => menu.code === 'patrol/base').children, [page])
+    assert.deepEqual(input, before)
+  }
+  assert.deepEqual(filter([warning, group], {applicationScope:'patrol-app'}), [group])
+})
+
 test('项目和无应用上下文保留完整授权树，不修改输入', () => {
   for (const applicationScope of [undefined, '', '__jetlinks_project__', 'business_application:__jetlinks_project__']) {
     const input = structuredClone([other, patrol]), before = structuredClone(input)

@@ -5,12 +5,19 @@
       <ConditionFilter :fields="fields" @change="filterChanged" />
       <a-button @click="version++">{{ t('Patrol.refresh') }}</a-button>
     </ProjectFilterBar>
-    <a-alert v-if="exportFailed" type="error" show-icon :message="t('Patrol.statistics.exportFailed')" />
-    <j-pro-table :columns="columns" :request="queryTaskGroups" :params="tableParams"
-      mode="TABLE" type="PAGE" row-key="id" :alert-show="false" :scroll="{ x: 1480 }"
+    <a-alert v-if="exportFailed" type="error" show-icon :message="exportFailure" />
+    <a-alert v-if="exporting" type="info" show-icon :message="t('Patrol.recordExport.waiting')"
+      :description="exportProgress.totalGroups ? t('Patrol.recordExport.progress', { done: exportProgress.processedGroups, total: exportProgress.totalGroups }) : undefined" />
+    <j-pro-table :columns="columns" :request="queryTaskGroups" :params="tableParams" :row-selection="rowSelection"
+      mode="TABLE" type="PAGE" row-key="id" :row-class-name="recordRowClass" :alert-show="false" :scroll="{ x: 1480 }"
       :body-style="{ flex: '1 1 0', height: '0', minHeight: 0 }"
       :default-params="{ sorts: [{ name: 'belongDate', order: 'desc' }, { name: 'id', order: 'asc' }] }">
-      <template #headerLeftRender><a-button :loading="exporting" @click="exportRecords">{{ t('Patrol.statistics.export') }}</a-button></template>
+      <template #headerLeftRender><a-button :loading="exporting" @click="exportRecords">{{ t(selectedIds.length ? 'Patrol.exportSelected' : 'Patrol.statistics.export') }}</a-button>
+        <div class="record-legend">
+          <span><i class="record-legend-dot record-legend-missed" />{{ t('Patrol.overview.missedPoints') }}</span>
+          <span><i class="record-legend-dot record-legend-absent" />{{ t('Patrol.calendar.absent') }}</span>
+        </div>
+      </template>
       <template #categoryName="row">{{ row.categoryName || '—' }}</template>
       <template #levelName="row">{{ row.levelName || '—' }}</template>
       <template #roleName="row">{{ row.roleId ? row.roleName : t('Patrol.allStaffPatrol') }}</template>
@@ -27,16 +34,24 @@
 <script setup lang="ts">
 import { patrolOptionSource } from '../../../composables/usePatrolOptionSource'
 import ProjectFilterBar from '../../../components/ProjectFilterBar.vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useNow } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { Button as AButton, Drawer as ADrawer, Alert as AAlert } from 'ant-design-vue'
 import ConditionFilter, { type ConditionFilterField, type ConditionFilterChangePayload } from '@jetlinks-web-core/components/ConditionFilter'
 import { queryTaskGroups, exportTaskGroups } from '../../../api/patrol'
 import type { Query, TaskGroup } from '../../../api/types'
 import TaskGroupDetails from '../../../components/TaskGroupDetails.vue'
-import { dateTime } from '../../../model/display'
+import { dateTime, recordAbnormalState } from '../../../model/display'
+import { useProjects } from '../../../composables/useProjects'
+import { selectedExportQuery } from '../../../model/export-query'
 import { groupMissedTerm } from '../../../model/record-filters'
 const { t } = useI18n()
+const now = useNow({ interval: 30000 })
+const recordRowClass = (row: TaskGroup) => {
+  const state = recordAbnormalState(row, now.value.getTime())
+  return state ? `patrol-record-${state}` : ''
+}
 const version = ref(0)
 const params = ref<Query>({ terms: [] }), selected = ref<TaskGroup>()
 // 表格监听 params；只在实际筛选或刷新变化时生成新对象，打开详情等渲染不重复分页。
@@ -44,12 +59,27 @@ const tableParams = computed(() => ({ ...params.value, _refresh: version.value }
 function filterChanged({ filter }: ConditionFilterChangePayload) {
   if (JSON.stringify(filter.terms) !== JSON.stringify(params.value.terms)) params.value = { terms: filter.terms }
 }
-const exporting = ref(false), exportFailed = ref(false)
+const selectedIds = ref<string[]>([])
+const rowSelection = computed(() => ({ selectedRowKeys: selectedIds.value, preserveSelectedRowKeys: true, onChange: (keys: (string | number)[]) => { selectedIds.value = keys.map(String) } }))
+const { revision: projectRevision } = useProjects()
+watch([tableParams, projectRevision], () => { selectedIds.value = [] })
+const exporting = ref(false), exportFailed = ref(false), exportFailure = ref('')
+const exportProgress = ref({ processedGroups: 0, totalGroups: 0 })
+function preventExportClose(event: BeforeUnloadEvent) {
+  if (exporting.value) { event.preventDefault(); event.returnValue = '' }
+}
+onMounted(() => window.addEventListener('beforeunload', preventExportClose))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', preventExportClose))
 async function exportRecords() {
   if (exporting.value) return
   exporting.value = true; exportFailed.value = false
-  try { await exportTaskGroups({ ...params.value, sorts: [{ name: 'belongDate', order: 'desc' }, { name: 'id', order: 'asc' }] }) }
-  catch { exportFailed.value = true }
+  exportProgress.value = { processedGroups: 0, totalGroups: 0 }
+  try { await exportTaskGroups(selectedExportQuery({ ...params.value, sorts: [{ name: 'belongDate', order: 'desc' }, { name: 'id', order: 'asc' }] }, selectedIds.value), status => { exportProgress.value = status }) }
+  catch (error) {
+    const code = error instanceof Error ? error.message.replace('error.patrol_record_export_', '') : 'failed'
+    exportFailure.value = t(`Patrol.recordExport.${['limit', 'detail_limit', 'image_limit', 'busy', 'not_ready'].includes(code) ? code : 'failed'}`)
+    exportFailed.value = true
+  }
   finally { exporting.value = false }
 }
 const referenceOptions = patrolOptionSource
@@ -83,4 +113,14 @@ const columns = computed(() => [
 .patrol-records { display: flex; flex-direction: column; gap: var(--space-3, 16px); min-height: 0; overflow: hidden; }
 .patrol-records > .patrol-filter-bar { flex: none; }
 .patrol-records > :deep(.jtable-body-spin) { min-width: 0; }
+.record-legend { display: inline-flex; gap: 16px; margin-inline-start: 16px; align-items: center; }
+.record-legend > span { display: inline-flex; gap: 6px; align-items: center; }
+.record-legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.record-legend-missed { background: #ffda1f; }
+.record-legend-absent { background: #e40707; }
+/* 固定列、悬浮及勾选态也保留业务行色，缺勤使用白字保证可读。 */
+.patrol-records :deep(.ant-table-tbody > tr.patrol-record-missed > td) { background: #ffda1f !important; color: #1f2329; }
+.patrol-records :deep(.ant-table-tbody > tr.patrol-record-absent > td) { background: #e40707 !important; color: #fff; }
+.patrol-records :deep(.patrol-record-absent .ant-btn-link),
+.patrol-records :deep(.patrol-record-absent a) { color: #fff; text-decoration: underline; }
 </style>

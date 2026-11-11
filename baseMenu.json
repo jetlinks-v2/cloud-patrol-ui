@@ -226,68 +226,6 @@
               }
             ],
             "icon": "UnorderedListOutlined"
-          },
-          {
-            "id": "patrol-warnings",
-            "code": "patrol/warnings",
-            "name": "异常预警配置",
-            "i18nMessages": {
-              "name": {
-                "zh": "异常预警配置",
-                "en": "Warning configuration"
-              }
-            },
-            "owner": "app",
-            "url": "/park/patrol/warnings",
-            "icon": "UnorderedListOutlined",
-            "showPage": [
-              "patrol-warning"
-            ],
-            "assetType": "patrolWarning",
-            "accessSupport": "support",
-            "assetTypes": [
-              "patrolWarning"
-            ],
-            "sortIndex": 4,
-            "permissions": [
-              {
-                "permission": "patrol-warning",
-                "actions": [
-                  "query"
-                ]
-              }
-            ],
-            "buttons": [
-              {
-                "id": "save",
-                "name": "保存",
-                "permissions": [
-                  {
-                    "permission": "patrol-warning",
-                    "actions": [
-                      "save"
-                    ]
-                  }
-                ]
-              },
-              {
-                "id": "delete",
-                "name": "删除",
-                "i18nMessages": {
-                  "zh_CN": "删除",
-                  "en_US": "Delete",
-                  "en": "Delete"
-                },
-                "permissions": [
-                  {
-                    "permission": "patrol-warning",
-                    "actions": [
-                      "delete"
-                    ]
-                  }
-                ]
-              }
-            ]
           }
         ]
       },

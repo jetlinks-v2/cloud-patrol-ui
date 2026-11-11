@@ -26,7 +26,6 @@ const entryIcons = { tasks: ScanOutlined, manage: EnvironmentOutlined, history: 
       <small>{{ t(missedFailed ? 'Mobile.summaryFailed' : 'Mobile.missedRange') }} ›</small>
     </button>
   </section>
-  <p class="home-count-hint">{{ t('Mobile.summaryHint') }}</p>
   <div class="home-section-heading"><h2>{{ t('Mobile.quickEntries') }}</h2></div>
   <nav class="home-menu" :aria-label="t('Mobile.homeTitle')">
     <button v-for="key in (['tasks', 'manage', 'history', 'missed'] as const)" :key="key" type="button" class="home-menu-item" :class="key" :disabled="!projectSelected" @click="emit('enter', key)">
@@ -34,8 +33,8 @@ const entryIcons = { tasks: ScanOutlined, manage: EnvironmentOutlined, history: 
     </button>
   </nav>
   <section class="offline-entry">
-    <button type="button" class="home-menu-item" @click="emit('enter', 'offline')">
-      <CloudDownloadOutlined aria-hidden="true" /><strong>{{ t('Mobile.offlineTitle') }}</strong><span>{{ t('Mobile.offlineUnavailable') }}</span>
+    <button type="button" class="home-menu-item" :disabled="!projectSelected" @click="emit('enter', 'offline')">
+      <CloudDownloadOutlined aria-hidden="true" /><strong>{{ t('Mobile.offlineTitle') }}</strong><span>{{ t('Mobile.offlineEntryHint') }} ›</span>
     </button>
   </section>
 </template>

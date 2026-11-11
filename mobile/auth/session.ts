@@ -2,8 +2,11 @@ import { reactive } from 'vue'
 import { MobileError } from '../browserSession'
 import { patrolProject } from '../projectScope'
 
-interface RuntimeConfig { applicationId: string; tenantDomain: string; title: string; apiBase: string }
-interface Session { token: string; applicationId: string; tenantDomain: string }
+interface RuntimeConfig { applicationId: string; tenantDomain?: string; title: string; apiBase: string }
+export interface Session { token: string; applicationId: string; tenantDomain: string }
+export class VerificationRequired extends MobileError {
+  constructor(public key: string) { super(403, 'Mobile.verificationRequired') }
+}
 export interface Authorization {
   user: { id: string; name?: string }
   permissions?: { id: string; actions: string[] }[]
@@ -20,7 +23,7 @@ export async function initializeConfig() {
   if (!response.ok) throw new MobileError(response.status, 'Mobile.loginConfigFailed')
   const config = await response.json() as RuntimeConfig
   if (typeof config.applicationId !== 'string' || !config.applicationId.trim()
-    || typeof config.tenantDomain !== 'string' || !config.tenantDomain.trim())
+    || config.tenantDomain !== undefined && typeof config.tenantDomain !== 'string')
     throw new MobileError(400, 'Mobile.loginConfigFailed')
   const requestedApplication = new URLSearchParams(location.search).get('applicationScope')
   if (requestedApplication && requestedApplication !== config.applicationId)
@@ -34,7 +37,7 @@ export async function initializeConfig() {
   try {
     const stored = JSON.parse(sessionStorage.getItem(KEY) || 'null') as Session | null
     if (stored && typeof stored.token === 'string' && stored.token.trim()
-      && stored.applicationId === config.applicationId && stored.tenantDomain === config.tenantDomain)
+      && stored.applicationId === config.applicationId && typeof stored.tenantDomain === 'string' && stored.tenantDomain.trim())
       setSession(stored)
     else sessionStorage.removeItem(KEY)
   } catch { sessionStorage.removeItem(KEY) }
@@ -57,10 +60,16 @@ export function clearSession(removeStored = true) {
 
 /** 401 只清理发起请求的会话；旧账号的迟到响应不能清掉新登录。 */
 export async function sessionRequest<T>(path: string, method = 'GET', body?: unknown,
-  options: { scoped?: boolean; projectId?: string } = {}): Promise<T> {
-  const scoped = options.scoped !== false, session = authState.session, requestRevision = revision
+  options: { scoped?: boolean; projectId?: string; session?: Session; signal?: AbortSignal; verification?: { key: string; token: string } } = {}): Promise<T> {
+  if (!path.startsWith('/') || path.startsWith('//') || /[\\#]/.test(path))
+    throw new MobileError(400, 'Mobile.sameOriginRequired')
+  const scoped = options.scoped !== false, session = options.session || authState.session, requestRevision = revision
   if (scoped && !session) throw new MobileError(401, 'Mobile.sessionRequired')
   const headers: Record<string, string> = {}
+  if (options.verification) {
+    headers['x-verify-key'] = options.verification.key
+    headers['x-verify-token'] = options.verification.token
+  }
   if (scoped && session) {
     headers['X-Access-Token'] = session.token
     headers['X-Asset-Scope'] = `business_application:${session.applicationId}`
@@ -70,30 +79,36 @@ export async function sessionRequest<T>(path: string, method = 'GET', body?: unk
   const multipart = body instanceof FormData
   if (body !== undefined && !multipart) headers['Content-Type'] = 'application/json'
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 30000)
+  const abort = () => controller.abort()
+  if (options.signal?.aborted) controller.abort()
+  else options.signal?.addEventListener('abort', abort, { once: true })
   try {
     const response = await fetch(authState.config.apiBase + path, {
       method, headers, credentials: 'omit', signal: controller.signal,
       body: multipart ? body as FormData : body === undefined ? undefined : JSON.stringify(body),
     })
     const data = await response.json().catch(() => null)
+    if (controller.signal.aborted) throw new DOMException('Request aborted', 'AbortError')
     if (scoped && requestRevision !== revision) throw new MobileError(401, 'Mobile.contextChanged')
     const status = response.ok ? data?.status || response.status : response.status
     if (!response.ok || !data || status !== 200) {
+      if (!scoped && status === 403 && data?.result?.type === 'captcha' && typeof data.result.key === 'string')
+        throw new VerificationRequired(data.result.key)
       if (scoped && status === 401) clearSession()
       const accessDenied = status === 403 && path.startsWith('/park/patrol/mobile/')
       throw new MobileError(status, accessDenied ? 'Mobile.accessDenied'
         : status === 401 ? 'Mobile.sessionRequired' : data?.message || 'Mobile.requestFailed')
     }
     return data.result as T
-  } finally { clearTimeout(timer) }
+  } finally { clearTimeout(timer); options.signal?.removeEventListener('abort', abort) }
 }
 
 /** 应用范围内核验访问权限；管理权限不代替员工身份或真实任务执行资格。 */
-export async function verifySession() {
-  const me = await sessionRequest<Authorization>('/authorize/me')
+export async function verifySession(session?: Session, signal?: AbortSignal) {
+  const me = await sessionRequest<Authorization>('/authorize/me', 'GET', undefined, { session, signal })
   if (!me.user?.id || !me.permissions?.some(permission =>
     ['patrol-task', 'patrol-point'].includes(permission.id) && permission.actions.includes('query')))
     throw new MobileError(403, 'Mobile.accessDenied')
-  authState.authorization = me
+  if (!session) authState.authorization = me
   return me
 }

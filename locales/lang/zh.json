@@ -5,10 +5,11 @@
     "pointQr": {
       "title": "二维码",
       "batch": "批量二维码",
-      "hint": "可下载单个点位图片，或打印全部二维码（每页一个，可在打印窗口另存为PDF）。二维码仅识别点位，巡更仍需登录和任务权限。",
+      "hint": "可下载单个点位图片、打包下载全部二维码，或打印另存为PDF。二维码仅识别点位，巡更仍需登录和任务权限。",
       "limit": "当前筛选超过500个点位，请缩小范围后再打印",
       "download": "下载PNG",
-      "print": "打印二维码 / 另存PDF"
+      "print": "打印二维码 / 另存PDF",
+      "downloadAll": "下载全部二维码（ZIP）"
     },
     "export": "导出数据",
     "exportFailed": "导出失败，请重试",
@@ -60,6 +61,7 @@
     "cancel": "取消",
     "select": "请选择",
     "requiredField": "请填写必填项",
+    "categoryDepthHint": "分类最多支持三级，第三级不可再新增下级。",
     "parent": "上级分类",
     "code": "点位编码",
     "location": "位置",
@@ -131,8 +133,7 @@
     "upperLimit": "合格上限（含）",
     "referenceText": "参考说明",
     "referenceHint": "参考说明仅供检查参考，不按文字是否相等自动判定合格。",
-    "qualifiedOptions": "合格选项",
-    "qualifiedHint": "留空表示此项不自动判定合格；旧标准不会默认将“正常”视为合格项。",
+    "firstOptionHint": "第一个选项为正常答案，其他选项的检查结果标红。",
     "photoRequired": "必须附图",
     "exampleImage": "例图",
     "uploadImage": "上传图片",
@@ -148,7 +149,7 @@
     "moveUp": "上移",
     "moveDown": "下移",
     "referenceRange": "合格范围",
-    "answer": "填写结果",
+    "answer": "检查结果",
     "checkResult": "检查判定",
     "checkResults": {
       "pass": "合格",
@@ -527,13 +528,24 @@
       },
       "pointStateLabel": "履行状态",
       "progressRate": "完成进度",
-      "dueFulfillmentRate": "到期履约率",
+      "dueFulfillmentRate": "已截止任务完成率",
       "progressRateHint": "有效完成次数 ÷ 全部应巡次数。含审核补计，未截止任务仍在分母中。",
       "dueFulfillmentRateHint": "已截止时段有效完成次数 ÷ 已截止时段应巡次数。未截止时段不参与，含审核补计；不代表按时打卡率。",
       "dueBasis": "已截止时段有效完成 / 应巡",
       "progressBasis": "有效完成 / 全部应巡",
       "noDue": "暂无已截止的应巡次数",
       "noExpected": "暂无应巡次数"
+    },
+    "exportSelected": "导出勾选项",
+    "recordExport": {
+      "waiting": "正在生成导出文件（包含图片），请耐心等待，不要刷新或关闭页面。完成后将自动下载。",
+      "progress": "已整理 {done} / {total} 条日任务，图片处理及文件打包可能仍需一段时间。",
+      "limit": "匹配日任务超过10000条，请缩小筛选范围或分批导出。",
+      "detail_limit": "关联明细超过100000条，请缩小筛选范围或分批导出。",
+      "image_limit": "图片超过4000张或缩略图总大小超过64MB，请分批导出。",
+      "busy": "当前导出任务较多，请稍后重试。",
+      "not_ready": "文件尚未准备完成，请稍后重试。",
+      "failed": "巡更记录导出失败，请稍后重试。"
     }
   }
 }

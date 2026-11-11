@@ -23,19 +23,19 @@
       }"
     >
       <template #headerLeftRender
-        ><j-permission-button
+        ><div class="patrol-toolbar"><j-permission-button
           type="primary"
           :has-permission="savePermission(resource)"
           @click="openEditor()"
           >{{ t('Patrol.add') }}</j-permission-button
-        ><a-button v-if="canExportConfiguration(resource)" :loading="exporting" @click="download(resource, exportQuery)">{{ t('Patrol.export') }}</a-button
-        ><slot name="toolbar" :selected="selected" :query="exportQuery" /></template
+        ><a-button v-if="canExportConfiguration(resource)" :loading="exporting" @click="download(resource, exportQuery)">{{ t(selected.length ? 'Patrol.exportSelected' : 'Patrol.export') }}</a-button
+        ><slot name="toolbar" :selected="selected" :query="exportQuery" /></div></template
       >
       <template #category="row"><ConfigReference resource="categories" :id="categoryId || row.categoryIds || row.categoryId" /></template>
       <template #parent="row"><ConfigReference resource="categories" :id="row.parentId" /></template>
       <template #assignedPosts="row"><ConfigReference resource="roles" :id="row.assignedRoleIds" /></template>
       <template #members="row"><ConfigReference resource="persons" :id="row.userIds" /></template>
-      <template #rule="row"><RuleSummary :rule="row.rule" /></template>
+      <template #rule="row"><RuleSummary :rule="row.rule" :summary="row.ruleSummary" /></template>
       <template #creatorName="row">{{ row.creatorName || '—' }}</template>
       <template #modifierName="row">{{ row.modifierName || '—' }}</template>
       <template #modifyTime="row">{{ dateTime(row.modifyTime) }}</template>
@@ -51,14 +51,14 @@
         }}</a-tag></template
       >
       <template #actions="row"
-        ><a-button type="link" @click="openEditor(row, true)">{{ t('Patrol.details') }}</a-button
+        ><div class="patrol-row-actions"><a-button type="link" @click="openEditor(row, true)">{{ t('Patrol.details') }}</a-button
         ><j-permission-button
           type="link"
           :has-permission="savePermission(resource)"
           @click="openEditor(row)"
           >{{ t('Patrol.edit') }}</j-permission-button
         ><a-button v-if="resource === 'levels'" type="link" @click="historyId = row.id">{{ t('Patrol.configHistory.title') }}</a-button
-        ><ConfigDelete v-if="canDeleteConfiguration(resource)" :resource="resource" :id="row.id" @deleted="refresh" /><slot name="actions" :row="row" /></template
+        ><ConfigDelete v-if="canDeleteConfiguration(resource)" :resource="resource" :id="row.id" @deleted="refresh" /><slot name="actions" :row="row" /></div></template
       >
     </j-pro-table>
     <ConfigHistory v-if="historyId && resource === 'levels'" :resource="resource" :id="historyId" @close="historyId = undefined" />
@@ -94,6 +94,8 @@ import { canDeleteConfiguration } from '../api/config-delete'
 import ConfigDelete from './ConfigDelete.vue'
 import { useConfigExport, canExportConfiguration } from '../composables/useConfigExport'
 import { savePermission } from '../model/resources'
+import { useProjects } from '../composables/useProjects'
+import { selectedExportQuery } from '../model/export-query'
 import { pointRolesTerm } from '../model/point-filters'
 import type { ConfigEntity, Resource, Query } from '../api/types'
 const ConfigEditor = defineAsyncComponent(() => import('./ConfigEditor.vue'))
@@ -107,14 +109,15 @@ const { saveFailed, visible, saving, draft, params, terms, load, edit, save, rel
   props.resource, props.point, toRef(props, 'categoryId')
 )
 const selected = ref<ConfigEntity[]>([])
-const exportQuery = computed<Query>(() => ({ terms: params.value.terms,
-  sorts: [{ name: 'createTime', order: 'desc' }, { name: 'id', order: 'asc' }] }))
-const rowSelection = computed(() => props.selectable ? {
+const exportQuery = computed<Query>(() => selectedExportQuery({ terms: params.value.terms,
+  sorts: [{ name: 'createTime', order: 'desc' }, { name: 'id', order: 'asc' }] }, selected.value.map(row => row.id!)))
+const rowSelection = computed(() => props.selectable || canExportConfiguration(props.resource) ? {
   selectedRowKeys: selected.value.map(row => row.id!),
   preserveSelectedRowKeys: true,
   onChange: (_keys: (string | number)[], rows: ConfigEntity[]) => { selected.value = rows },
 } : undefined)
-watch([terms, () => props.categoryId], () => { selected.value = [] })
+const { revision: projectRevision } = useProjects()
+watch([terms, () => props.categoryId, projectRevision], () => { selected.value = [] })
 function refresh() { selected.value = []; reload() }
 defineExpose({ refresh })
 function openEditor(row?: ConfigEntity, readOnly = false) {
@@ -191,6 +194,8 @@ function filterChanged({ filter }: ConditionFilterChangePayload) {
 }
 </script>
 <style scoped>
+.patrol-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+.patrol-row-actions { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
 .patrol-page {
   display: flex;
   flex-direction: column;

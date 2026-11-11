@@ -14,7 +14,8 @@
           </section>
         </div>
       </a-spin>
-      <a-button type="primary" :disabled="!state.rows.length || state.loading" @click="emit('print', cards)">{{ t('Patrol.pointQr.print') }}</a-button>
+      <a-button :loading="state.downloading" :disabled="!state.rows.length || state.loading" @click="emit('downloadAll', cards)">{{ t('Patrol.pointQr.downloadAll') }}</a-button>
+      <a-button type="primary" :loading="state.printing" :disabled="!state.rows.length || state.loading" @click="emit('print', cards)">{{ t('Patrol.pointQr.print') }}</a-button>
     </a-space>
   </a-modal>
 </template>
@@ -24,8 +25,8 @@ import { useI18n } from 'vue-i18n'
 import { Modal as AModal, Alert as AAlert, Space as ASpace, Button as AButton, QRCode as AQrcode, Spin as ASpin, Empty as AEmpty } from 'ant-design-vue'
 import type { ConfigEntity } from '../api/types'
 import { pointQrValue } from '../model/point-qr'
-const props = defineProps<{ state: { rows: ConfigEntity[]; loading: boolean; failed: boolean; tooMany: boolean } }>()
-const emit = defineEmits<{ close: []; download: [point: ConfigEntity, card?: HTMLElement]; print: [cards?: HTMLElement] }>()
+const props = defineProps<{ state: { rows: ConfigEntity[]; loading: boolean; failed: boolean; tooMany: boolean; downloading: boolean; printing: boolean } }>()
+const emit = defineEmits<{ close: []; download: [point: ConfigEntity, card?: HTMLElement]; print: [cards?: HTMLElement]; downloadAll: [cards?: HTMLElement] }>()
 const { t } = useI18n(), cards = ref<HTMLElement>()
 function cardFor(id: string) {
   const index = props.state.rows.findIndex(row => row.id === id)

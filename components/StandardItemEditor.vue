@@ -7,12 +7,8 @@
       <a-select :value="itemType(item)" :options="typeOptions" @update:value="setType" />
     </a-form-item>
     <template v-if="itemType(item) === 'choice'">
-      <a-form-item :label="t('Patrol.itemOptions')">
+      <a-form-item :label="t('Patrol.itemOptions')" :extra="t('Patrol.firstOptionHint')">
         <a-select :value="item.options" mode="tags" @update:value="setOptions" />
-      </a-form-item>
-      <a-form-item :label="t('Patrol.qualifiedOptions')" :extra="t('Patrol.qualifiedHint')">
-        <a-select :value="item.qualifiedOptions || []" mode="multiple" :options="item.options.map(value => ({ value, label: value }))"
-          @update:value="patch({ qualifiedOptions: $event as string[] })" />
       </a-form-item>
     </template>
     <a-space v-if="itemType(item) === 'number'" align="start">
@@ -52,7 +48,7 @@ function setType(value: unknown) { if (itemTypes.includes(value as ItemType)) em
 function setOptions(value: unknown) {
   if (!Array.isArray(value)) return
   const options = value.filter((entry): entry is string => typeof entry === 'string')
-  patch({ options, qualifiedOptions: (props.item.qualifiedOptions ?? []).filter(entry => options.includes(entry)) })
+  patch({ options, qualifiedOptions: options.slice(0, 1) })
 }
 </script>
 <style scoped>

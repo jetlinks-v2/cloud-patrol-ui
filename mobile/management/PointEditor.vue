@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { Button, Form, Input, Select, Switch, TreeSelect, Modal, type FormInstance } from 'ant-design-vue'
+import { Button, Form, Input, Select, Switch, TreeSelect, type FormInstance } from 'ant-design-vue'
 import { useI18n } from 'vue-i18n'
 import type { ConfigEntity } from '../../api/types'
 import { categoryTree } from '../../model/categories'
 import MobileProjectFilter from '../components/MobileProjectFilter.vue'
 const props = defineProps<{ value: ConfigEntity; categories: ConfigEntity[]; tags: ConfigEntity[]; canSave: boolean; canConfigure: boolean; saving: boolean }>()
-const emit = defineEmits<{ save: [point: ConfigEntity]; category: [action: 'link' | 'cancel', id: string]; configure: [category: string]; qr: [] }>()
-const { t } = useI18n(), form = ref<FormInstance>(), model = reactive<ConfigEntity>({ name: '', enabled: true }), linked = ref<string>()
-watch(() => props.value, value => { Object.assign(model, value, { tagIds: [...(value.tagIds || [])] }); linked.value = undefined }, { immediate: true })
+const emit = defineEmits<{ save: [point: ConfigEntity]; configure: [category: string]; qr: [] }>()
+const { t } = useI18n(), form = ref<FormInstance>(), model = reactive<ConfigEntity>({ name: '', enabled: true })
+watch(() => props.value, value => { Object.assign(model, value, { tagIds: [...(value.tagIds || [])] }) }, { immediate: true })
 const categoryRows = computed(() => props.categories.filter(row => row.projectId === model.projectId))
 const categoryOptions = computed(() => categoryTree(categoryRows.value.filter(row => row.enabled)))
 const categoryIds = computed(() => props.value.categoryIds || (props.value.categoryId ? [props.value.categoryId] : []))
 const currentCategories = computed(() => categoryIds.value.map(id => props.categories.find(row => row.id === id) || { id, name: id }))
-const linkOptions = computed(() => categoryTree(categoryRows.value.filter(row => row.enabled && !categoryIds.value.includes(row.id!))))
 const tagOptions = computed(() => props.tags.filter(row => row.projectId === model.projectId && (row.enabled || model.tagIds?.includes(row.id!))).map(row => ({ value: row.id!, label: row.name })))
 const required = [{ required: true, whitespace: true, message: t('Mobile.required') }]
 watch(() => model.categoryId, id => {
@@ -30,10 +29,6 @@ async function save() {
   try { await form.value?.validate() } catch { return }
   emit('save', { ...model, tagIds: [...(model.tagIds || [])] })
 }
-function cancelCategory(id: string) {
-  Modal.confirm({ title: t('Mobile.unlinkCategory'), content: t('Patrol.pointCategories.cancelHelp'),
-    okText: t('Mobile.confirm'), cancelText: t('Mobile.cancel'), onOk: () => emit('category', 'cancel', id) })
-}
 </script>
 <template>
   <Form ref="form" :model="model" layout="vertical" class="panel point-editor" :disabled="!canSave || saving" @finish="save">
@@ -46,6 +41,7 @@ function cancelCategory(id: string) {
     <Form.Item v-if="!model.id" name="categoryId" :label="t('Mobile.category')" :rules="required">
       <TreeSelect v-model:value="model.categoryId" :tree-data="categoryOptions" tree-default-expand-all show-search allow-clear tree-node-filter-prop="title" :placeholder="t('Patrol.select')" />
     </Form.Item>
+    <Form.Item name="nfcCode" :label="t('Mobile.nfcCode')"><Input v-model:value="model.nfcCode" :maxlength="128" /></Form.Item>
     <Form.Item name="location" :label="t('Mobile.pointLocation')" :rules="required"><Input v-model:value="model.location" :maxlength="255" /></Form.Item>
     <Form.Item :label="t('Patrol.tags')"><Select v-model:value="model.tagIds" mode="multiple" :options="tagOptions" :disabled="saving || !canSave || !tags.length" :placeholder="t('Patrol.select')" /></Form.Item>
     <Form.Item :label="t('Patrol.enabled')"><Switch v-model:checked="model.enabled" /></Form.Item>
@@ -61,13 +57,9 @@ function cancelCategory(id: string) {
       <div v-for="item in currentCategories" :key="item.id" class="category-relation">
         <span>{{ item.name }}</span><div class="inline-actions">
           <Button v-if="canConfigure" :disabled="saving" @click="emit('configure', item.id!)">{{ t('Patrol.patrolConfiguration') }}</Button>
-          <Button v-if="canSave" danger :disabled="saving" @click="cancelCategory(item.id!)">{{ t('Mobile.unlinkCategory') }}</Button>
         </div>
       </div>
-      <div v-if="canSave" class="category-link">
-        <TreeSelect v-model:value="linked" :tree-data="linkOptions" tree-default-expand-all show-search tree-node-filter-prop="title" :placeholder="t('Patrol.select')" :disabled="saving" />
-        <Button :disabled="!linked || saving" @click="emit('category', 'link', linked!)">{{ t('Patrol.pointCategories.link') }}</Button>
-      </div>
+
     </section>
   </template>
 </template>

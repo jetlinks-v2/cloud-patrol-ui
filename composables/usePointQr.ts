@@ -4,10 +4,15 @@ import type { ConfigEntity, Query } from '../api/types'
 import { pointQrFilename } from '../model/point-qr'
 /** 二维码预览和当前条件批量打印；沿用标准点位查询权限，超限不静默截断。 */
 export function usePointQr() {
-  const visible = ref(false), loading = ref(false), failed = ref(false), tooMany = ref(false)
+  const printing = ref(false), downloading = ref(false), visible = ref(false), loading = ref(false), failed = ref(false), tooMany = ref(false)
   const rows = shallowRef<ConfigEntity[]>([])
   let version = 0, printFrame: HTMLIFrameElement | undefined
-  function close() { version++; visible.value = false; loading.value = false; rows.value = []; printFrame?.remove(); printFrame = undefined }
+  let printUrls: string[] = []
+  function clearPrint() {
+    printFrame?.remove(); printFrame = undefined
+    printUrls.forEach(url => URL.revokeObjectURL(url)); printUrls = []
+  }
+  function close() { version++; visible.value = false; loading.value = false; rows.value = []; clearPrint() }
   onScopeDispose(close)
   async function open(source: ConfigEntity | Query) {
     const current = ++version
@@ -23,14 +28,14 @@ export function usePointQr() {
     } catch { if (current === version) failed.value = true }
     finally { if (current === version) loading.value = false }
   }
-  async function download(point: ConfigEntity, card: HTMLElement | undefined) {
-    const svg = card?.querySelector('svg'); if (!svg) return
-    failed.value = false
+  async function render(point: ConfigEntity, card: HTMLElement | undefined): Promise<Blob> {
+    const svg = card?.querySelector('.ant-qrcode svg') ?? card?.querySelector('svg'); if (!svg) throw new Error('QR not ready')
     const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml;charset=utf-8' }))
     try {
       const image = new Image(); image.src = url; await image.decode()
-      const canvas = document.createElement('canvas'); canvas.width = 600; canvas.height = 760
+      const canvas = document.createElement('canvas'); canvas.width = 1200; canvas.height = 1520
       const context = canvas.getContext('2d'); if (!context) throw new Error('canvas unavailable')
+      context.scale(2, 2)
       context.fillStyle = '#fff'; context.fillRect(0, 0, 600, 760); context.drawImage(image, 50, 20, 500, 500)
       context.fillStyle = '#000'; context.textAlign = 'center'; context.font = '24px sans-serif'
       // 两行点位名和一行编码；避免长名称越出图片边缘。
@@ -41,23 +46,69 @@ export function usePointQr() {
       if (line) lines.push(line)
       lines.slice(0, 2).forEach((value, index) => context.fillText(value + (index === 1 && lines.length > 2 ? '…' : ''), 300, 570 + index * 36, 540))
       context.fillText(point.code || '', 300, 680, 540)
-      const anchor = document.createElement('a'); anchor.download = pointQrFilename(point); anchor.href = canvas.toDataURL('image/png'); anchor.click()
-    } catch { failed.value = true } finally { URL.revokeObjectURL(url) }
+      return await new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('QR image failed')), 'image/png'))
+    } finally { URL.revokeObjectURL(url) }
   }
-  function print(cards: HTMLElement | undefined) {
-    if (!cards || !rows.value.length) return
-    printFrame?.remove(); printFrame = document.createElement('iframe')
-    printFrame.setAttribute('aria-hidden', 'true'); printFrame.tabIndex = -1
-    printFrame.style.cssText = 'position:fixed;width:0;height:0;border:0;'
-    document.body.appendChild(printFrame)
-    const doc = printFrame.contentDocument, target = printFrame.contentWindow
-    if (!doc || !target) { failed.value = true; return }
-    const style = doc.createElement('style')
-    style.textContent = '@page{size:A4;margin:20mm}body{font:20px sans-serif}.qr-card{height:240mm;break-after:page;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;overflow-wrap:anywhere}.qr-card:last-child{break-after:auto}svg{width:100mm;height:100mm}.qr-card button{display:none}'
-    doc.head.appendChild(style)
-    // cloneNode 复制 Vue 已转义的名称与 SVG，不拼接用户输入到 HTML 或脚本。
-    for (const card of Array.from(cards.querySelectorAll('.qr-card'))) doc.body.appendChild(card.cloneNode(true))
-    target.focus(); target.print()
+  function saveBlob(blob: Blob, name: string) {
+    const url = URL.createObjectURL(blob), anchor = document.createElement('a')
+    anchor.href = url; anchor.download = name; document.body.appendChild(anchor); anchor.click(); anchor.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
-  return { visible, loading, failed, tooMany, rows, open, close, download, print }
+  async function download(point: ConfigEntity, card: HTMLElement | undefined) {
+    failed.value = false
+    try { saveBlob(await render(point, card), pointQrFilename(point)) } catch { failed.value = true }
+  }
+  /** 一次ZIP下载避免浏览器拦截多文件；加入点位ID避免同名文件覆盖。 */
+  async function downloadAll(cards: HTMLElement | undefined) {
+    if (!cards || downloading.value || !rows.value.length) return
+    const current = version, points = [...rows.value], elements = cards.querySelectorAll<HTMLElement>('.qr-card')
+    downloading.value = true; failed.value = false
+    try {
+      const { zipSync } = await import('fflate')
+      const files: Record<string, Uint8Array> = {}
+      for (const [index, point] of points.entries()) {
+        if (current !== version) return
+        const image = await render(point, elements[index])
+        files[`${index + 1}-${point.id}-${pointQrFilename(point)}`] = new Uint8Array(await image.arrayBuffer())
+      }
+      if (current === version) saveBlob(new Blob([zipSync(files, { level: 0 })], { type: 'application/zip' }), '巡更点位二维码.zip')
+    } catch { if (current === version) failed.value = true }
+    finally { downloading.value = false }
+  }
+  /** 打印复用下载图片，避开 AntD 二维码外层固定200px与放大SVG相互覆盖。 */
+  async function print(cards: HTMLElement | undefined) {
+    if (!cards || !rows.value.length || printing.value) return
+    const current = version, points = [...rows.value]
+    const elements = cards.querySelectorAll<HTMLElement>('.qr-card')
+    printing.value = true; failed.value = false
+    clearPrint()
+    try {
+      const images: Blob[] = []
+      for (const [index, point] of points.entries()) images.push(await render(point, elements[index]))
+      if (current !== version) return
+      printFrame = document.createElement('iframe')
+      printFrame.setAttribute('aria-hidden', 'true'); printFrame.tabIndex = -1
+      printFrame.style.cssText = 'position:fixed;width:0;height:0;border:0;'
+      document.body.appendChild(printFrame)
+      const doc = printFrame.contentDocument, target = printFrame.contentWindow
+      if (!doc || !target) throw new Error('print document unavailable')
+      doc.title = '巡更点位二维码'
+      const style = doc.createElement('style')
+      style.textContent = '@page{size:A4;margin:20mm}body{margin:0;width:170mm}.qr-print-page{width:170mm;height:250mm;display:flex;align-items:center;justify-content:center;break-inside:avoid;break-after:page}.qr-print-page:last-child{break-after:auto}.qr-print-page img{display:block;width:130mm;height:auto;max-height:240mm;object-fit:contain}'
+      doc.head.appendChild(style)
+      const ready: Promise<void>[] = []
+      for (const blob of images) {
+        const page = doc.createElement('section'), image = doc.createElement('img')
+        page.className = 'qr-print-page'
+        const url = URL.createObjectURL(blob); printUrls.push(url)
+        image.src = url; page.appendChild(image); doc.body.appendChild(page)
+        ready.push(image.decode())
+      }
+      await Promise.all(ready)
+      if (current === version) { target.focus(); target.print() }
+    } catch { if (current === version) failed.value = true }
+    finally { printing.value = false }
+  }
+
+  return { visible, loading, failed, tooMany, rows, printing, downloading, open, close, download, downloadAll, print }
 }

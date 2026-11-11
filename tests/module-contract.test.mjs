@@ -48,7 +48,7 @@ test('page button permission expressions resolve to declared menu codes and butt
   assert.equal(checked, resources.length * 2)
 })
 test('menu, actual page, backend resource, application template and asset types align', () => {
-  assert.equal(pages.length, 8)
+  assert.equal(pages.length, 7)
   const seen = new Set()
   for (const item of pages) {
     assert(!seen.has(item.id))
@@ -109,7 +109,6 @@ test('Chinese and English dictionaries have identical keys and cover literal UI 
     'components/InspectionResults.vue',
     'views/patrol/records/index.vue',
     'views/patrol/points/index.vue',
-    'views/patrol/warnings/index.vue',
     'components/RosterImport.vue',
   ]) {
     for (const [, key] of read(file).matchAll(/(?:t\(|'|")(Patrol\.[A-Za-z0-9.]+)(?:'|")/g))
@@ -156,26 +155,12 @@ test('menu grants expose every template asset, including the person directory us
   assert.equal(pages.find(node => node.id === 'patrol-coverage').name, '巡更总览')
  })
 
-test('warning configuration has no tag management entry or write grant', () => {
-  const warnings = pages.find(page => page.id === 'patrol-warnings')
-  assert.equal(warnings.name, '异常预警配置')
+test('retired warning settings have no menu, page or template grant', () => {
+  assert(!pages.some(page => page.id === 'patrol-warnings'))
+  assert(!template.includes('- id: patrol-warnings\n'))
+  assert(!template.includes('asset-type: patrolWarning'))
+  assert(!existsSync(new URL('views/patrol/warnings/index.vue', root)))
   assert(!pages.some(page => page.id === 'patrol-tags'))
-  assert(!template.includes('- id: patrol-tags\n'))
-  assert(!template.includes('- id: patrol-tag-management\n'))
-  assert.deepEqual(warnings.assetTypes, ['patrolWarning'])
-  assert.deepEqual(warnings.permissions, [
-    { permission: 'patrol-warning', actions: ['query'] },
-  ])
-  for (const [resource, buttonId, permission] of [
-    ['warnings', 'save', 'patrol-warning'],
-  ]) {
-    assert.equal(savePermission(resource), `patrol/warnings:${buttonId}`)
-    const button = warnings.buttons.find(button => button.id === buttonId)
-    assert.deepEqual(button.permissions, [{ permission, actions: ['save'] }])
-  }
-  assert(!template.includes('{id: tags, granted: true}'))
-  assert(!existsSync(new URL('views/patrol/tags/index.vue', root)))
-  assert(!read('views/patrol/warnings/index.vue').includes('resource="tags"'))
   assert(pages.find(page => page.id === 'patrol-points').permissions.some(permission =>
     permission.permission === 'patrol-tag' && permission.actions.includes('query')))
 })

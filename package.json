@@ -6,8 +6,10 @@
   "type": "module",
   "main": "index.ts",
   "dependencies": {
+    "altcha": "3.2.2",
     "jsencrypt": "3.3.2",
-    "jsqr": "1.4.0"
+    "jsqr": "1.4.0",
+    "fflate": "0.8.3"
   },
   "scripts": {
     "build": "pnpm --filter jetlinks-web-core build -- -- --module-name cloud-patrol-ui",

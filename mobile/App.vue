@@ -11,6 +11,7 @@ import MobileProjectFilter from './components/MobileProjectFilter.vue'
 import { patrolProject } from './projectScope'
 import MobileMissed from './components/MobileMissed.vue'
 import PatrolHome from './components/PatrolHome.vue'
+import OfflineWorkspace from './offline/OfflineWorkspace.vue'
 import { homeSummary, homeTasks, type HomeTaskState } from './home'
 import { pointGroups, type PointGroup } from './points'
 import { useMobilePatrol } from './useMobilePatrol'
@@ -22,28 +23,30 @@ defineProps<{ standalone?: boolean; loggingOut?: boolean }>()
 const emit = defineEmits<{ logout: [] }>()
 const { t, te } = useI18n()
 const { date, tab, mine, missedCount, missedError, historyScope, canReadProjectHistory, people, categories, levels, historyFilters, filterError, searchHistory, loadHistoryOptions, rows, records, selected, record, success, loading, sending, uploading,
-  error, draft, errors, images, total, locked, reason, load, open, leave, changeAnswer, upload, preview, submit, scanPoint } = useMobilePatrol()
-const point = ref<PointGroup>(), now = ref(Date.now()), missedOpen = ref(false), missedBusy = ref(false), scanOpen = ref(false)
+  error, draft, errors, images, total, locked, reason, load, open, leave, changeAnswer, upload, preview, submit, scanPoint, scanNfc } = useMobilePatrol()
+const point = ref<PointGroup>(), now = ref(Date.now()), missedOpen = ref(false), missedBusy = ref(false), scanOpen = ref(false), nfcMode = ref(false)
 const offlineOpen = ref(false)
+const offline = ref<{ back(): void }>(), offlineBusy = ref(false), offlineScreen = ref({ key: 'offline', depth: 1 })
 const management = ref<{ back(): void }>(), managementBusy = ref(false)
 const managementScreen = ref({ key: 'manage', depth: 1, title: 'Mobile.entries.manage' })
 const summary = computed(() => homeSummary(rows.value, date.value, now.value))
-const taskState = ref<HomeTaskState>()
+const taskState = ref<'completed'>()
 const visibleTasks = computed(() => taskState.value ? homeTasks(rows.value, date.value, now.value, taskState.value) : rows.value)
 const activePoint = computed(() => pointGroups(visibleTasks.value, '', '', categories.value, now.value, taskState.value === 'completed').find(item => item.id === point.value?.id) || point.value)
 const detail = computed(() => !!selected.value || !!record.value || !!point.value || missedOpen.value || scanOpen.value || offlineOpen.value)
 const screen = computed(() => ({
-  key: offlineOpen.value ? 'offline' : scanOpen.value ? 'scan' : missedOpen.value ? 'missed' : selected.value ? `task:${selected.value.task.id}` : record.value ? `record:${record.value.id}` : point.value ? `point:${point.value.id}` : tab.value === 'manage' ? managementScreen.value.key : tab.value,
-  depth: offlineOpen.value ? 1 : missedOpen.value ? (tab.value === 'home' ? 1 : 2) : scanOpen.value ? 2 : selected.value || record.value ? (point.value ? 3 : tab.value === 'home' ? 1 : 2) : point.value ? 2 : tab.value === 'manage' ? managementScreen.value.depth : tab.value === 'home' ? 0 : 1,
+  key: offlineOpen.value ? offlineScreen.value.key : scanOpen.value ? 'scan' : missedOpen.value ? 'missed' : selected.value ? `task:${selected.value.task.id}` : record.value ? `record:${record.value.id}` : point.value ? `point:${point.value.id}` : tab.value === 'manage' ? managementScreen.value.key : tab.value,
+  depth: offlineOpen.value ? offlineScreen.value.depth : missedOpen.value ? (tab.value === 'home' ? 1 : 2) : scanOpen.value ? 2 : selected.value || record.value ? (point.value ? 3 : tab.value === 'home' ? 1 : 2) : point.value ? 2 : tab.value === 'manage' ? managementScreen.value.depth : tab.value === 'home' ? 0 : 1,
 }))
-const { keyboardOpen } = useWebView(screen, computed(() => locked.value || missedBusy.value || managementBusy.value), back)
+const { keyboardOpen } = useWebView(screen, computed(() => locked.value || missedBusy.value || managementBusy.value || offlineBusy.value), back)
 watch(() => screen.value.key, () => { void nextTick(() => window.scrollTo(0, 0)) })
-const heading = computed(() => t(offlineOpen.value ? 'Mobile.offlineTitle' : scanOpen.value ? 'Mobile.scanTitle' : missedOpen.value ? 'Patrol.missed.title' : selected.value ? 'Mobile.inspectionTitle' : record.value ? 'Mobile.recordTitle'
+const heading = computed(() => t(offlineOpen.value ? 'Mobile.offlineTitle' : scanOpen.value ? nfcMode.value ? 'Mobile.nfcTitle' : 'Mobile.scanTitle' : missedOpen.value ? 'Patrol.missed.title' : selected.value ? 'Mobile.inspectionTitle' : record.value ? 'Mobile.recordTitle'
   : point.value ? 'Mobile.pointDetails' : tab.value === 'manage' ? managementScreen.value.title : tab.value === 'home' ? 'Mobile.homeTitle' : tab.value === 'history' ? 'Mobile.historyTitle' : 'Mobile.pointsTitle'))
 let timer: ReturnType<typeof setInterval>
 function back() {
-  if (locked.value || missedBusy.value || managementBusy.value) return
-  if (offlineOpen.value) offlineOpen.value = false
+  if (locked.value || missedBusy.value || managementBusy.value || offlineBusy.value) return
+  if (offlineOpen.value && offlineScreen.value.depth > 1) offline.value?.back()
+  else if (offlineOpen.value) offlineOpen.value = false
   else if (scanOpen.value) scanOpen.value = false
   else if (missedOpen.value) { missedOpen.value = false; void load() }
   else if (selected.value || record.value) leave()
@@ -79,12 +82,13 @@ watch(patrolProject, () => {
 })
 function enter(page: 'tasks' | 'history' | 'manage' | 'missed' | 'offline') {
   if (page === 'tasks') taskState.value = undefined
-  if (page === 'offline') offlineOpen.value = true
+  if (page === 'offline') { offlineScreen.value = { key: 'offline', depth: 1 }; offlineOpen.value = true }
   else if (page === 'missed') missedOpen.value = true
   else tab.value = page
 }
 function enterTasks(state: HomeTaskState) {
-  taskState.value = state; mine.value = true
+  // 可巡更和冷却中共用点位列表，打卡后仍显示冷却点位；今日完成保留独立筛选。
+  taskState.value = state === 'completed' ? 'completed' : undefined; mine.value = true
   date.value = businessTime().format('YYYY-MM-DD'); tab.value = 'tasks'
 }
 onMounted(() => {
@@ -101,27 +105,22 @@ onUnmounted(() => {
   <ConfigProvider :theme="{ token: { colorPrimary: '#2979ff', borderRadius: 8 } }">
     <div class="mobile-patrol" :class="{ 'keyboard-open': keyboardOpen }">
       <header class="app-header">
-        <button type="button" class="header-back" :aria-label="t('Mobile.back')" :disabled="locked || missedBusy || managementBusy" @click="back"><span /></button>
+        <button type="button" class="header-back" :aria-label="t('Mobile.back')" :disabled="locked || missedBusy || managementBusy || offlineBusy" @click="back"><span /></button>
         <h1>{{ heading }}</h1>
-        <button v-if="!detail && tab === 'tasks'" type="button" class="header-action" @click="tab = 'history'">{{ t('Mobile.recordsEntry') }}</button>
-        <button v-else-if="standalone && !detail && tab === 'home'" type="button" class="header-action" :disabled="loggingOut || locked || missedBusy || managementBusy" @click="emit('logout')">{{ t('Mobile.logout') }}</button>
+        <button v-if="standalone && !detail && tab === 'home'" type="button" class="header-action" :disabled="loggingOut || locked || missedBusy || managementBusy" @click="emit('logout')">{{ t('Mobile.logout') }}</button>
       </header>
       <main :class="{ 'has-submit': selected, 'points-home': !detail && tab === 'tasks' }">
         <MobileProjectFilter v-if="!detail && !(tab === 'manage' && managementScreen.depth > 1)" :disabled="locked || loading || managementBusy" />
         <Alert v-if="!patrolProject && !offlineOpen" class="notice" type="info" show-icon :message="t('Mobile.chooseProjectFirst')" />
         <Alert v-if="error" class="notice" type="error" show-icon :message="te(error) ? t(error) : error" />
-        <section v-if="offlineOpen" class="panel offline-notice">
-          <h2>{{ t('Mobile.offlineTitle') }}</h2><p>{{ t('Mobile.offlineHint') }}</p>
-          <Button type="primary" block @click="tab = 'tasks'; offlineOpen = false">{{ t('Mobile.onlinePatrol') }}</Button>
-        </section>
+        <OfflineWorkspace v-if="offlineOpen" ref="offline" @busy="offlineBusy = $event" @screen="offlineScreen = $event" />
         <PatrolHome v-else-if="!detail && tab === 'home'" :summary="summary" :missed="missedCount" :loading="loading" :failed="!!error" :missed-failed="missedError" :project-selected="!!patrolProject" @enter="enter" @tasks="enterTasks" @refresh="load()" />
         <div v-else-if="!patrolProject" class="empty">{{ t('Mobile.chooseProjectFirst') }}</div>
-        <ScanPage v-else-if="scanOpen" :resolve="scanPoint" @select="open($event); scanOpen = false" />
+        <ScanPage v-else-if="scanOpen" :resolve="nfcMode ? scanNfc : scanPoint" :nfc="nfcMode" @select="open($event); scanOpen = false" />
         <MobileMissed v-else-if="missedOpen" @busy="missedBusy = $event" />
         <PointManagement v-else-if="!detail && tab === 'manage'" ref="management" @screen="managementScreen = $event" @busy="managementBusy = $event" />
         <template v-else-if="!detail && tab === 'tasks'">
-          <div v-if="taskState" class="task-state-filter"><strong>{{ t(`Mobile.homeStats.${taskState}`) }}</strong><Button type="link" @click="taskState = undefined">{{ t('Mobile.all') }}</Button></div>
-          <div class="point-refresh"><Button type="primary" :disabled="locked || loading" @click="scanOpen = true">{{ t('Mobile.scanTitle') }}</Button><Button type="link" @click="missedOpen = true">{{ t('Patrol.missed.title') }}</Button></div>
+          <div class="point-scan-toolbar"><Button :disabled="locked || loading" @click="nfcMode = false; scanOpen = true">{{ t('Mobile.scanTitle') }}</Button><Button :disabled="locked || loading" @click="nfcMode = true; scanOpen = true">{{ t('Mobile.nfcTitle') }}</Button></div>
           <PointGrid v-if="!error" :rows="visibleTasks" :categories="categories" :mine="mine" :loading="loading" :now="now" :include-ended="taskState === 'completed'"
             @mine="mine = $event" @select="point = $event" />
           <div class="point-refresh"><button type="button" class="text-button" :disabled="loading" @click="load()">{{ t(loading ? 'Mobile.loading' : 'Mobile.refresh') }}</button></div>
@@ -131,22 +130,21 @@ onUnmounted(() => {
             <button type="button" :class="{ active: historyScope === 'mine' }" @click="historyScope = 'mine'">{{ t('Mobile.myHistory') }}</button>
             <button type="button" :class="{ active: historyScope === 'authorized' }" @click="historyScope = 'authorized'">{{ t('Mobile.projectHistory') }}</button>
           </div>
-          <form class="panel history-filters" @submit.prevent="searchHistory()">
-            <label><span>{{ t('Mobile.historyFrom') }}</span><input v-model="historyFilters.from" type="date" required :max="historyFilters.to" /></label>
-            <label><span>{{ t('Mobile.historyTo') }}</span><input v-model="historyFilters.to" type="date" required :min="historyFilters.from" /></label>
-            <label><span>{{ t('Mobile.pointName') }}</span><Input v-model:value="historyFilters.pointName" :maxlength="128" :placeholder="t('Mobile.namePlaceholder')" /></label>
-            <label><span>{{ t('Mobile.category') }}</span><select v-model="historyFilters.categoryId"><option value="">{{ t('Mobile.all') }}</option><option v-for="item in categories" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
-            <label><span>{{ t('Mobile.level') }}</span><select v-model="historyFilters.levelId"><option value="">{{ t('Mobile.all') }}</option><option v-for="item in levels" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
+          <form class="history-filters" @submit.prevent="searchHistory()">
+            <label><span>{{ t('Mobile.filterCategory') }}</span><select v-model="historyFilters.categoryId"><option value="">{{ t('Mobile.all') }}</option><option v-for="item in categories" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
+            <label><span>{{ t('Mobile.filterLevel') }}</span><select v-model="historyFilters.levelId"><option value="">{{ t('Mobile.all') }}</option><option v-for="item in levels" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
             <label v-if="historyScope === 'authorized' && canReadProjectHistory"><span>{{ t('Mobile.user') }}</span><select v-model="historyFilters.userId"><option :value="undefined">{{ t('Mobile.all') }}</option><option v-for="item in people" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
-            <Alert v-if="filterError" type="warning" :message="t('Mobile.filterOptionsFailed')" />
-            <div class="history-filter-actions"><Button html-type="submit" type="primary" :loading="loading">{{ t('Mobile.search') }}</Button><Button :disabled="loading" @click="searchHistory(true)">{{ t('Mobile.reset') }}</Button></div>
+            <label :class="{ 'filter-wide': historyScope !== 'authorized' || !canReadProjectHistory }"><span>{{ t('Mobile.pointName') }}</span><Input v-model:value="historyFilters.pointName" :maxlength="128" :placeholder="t('Mobile.namePlaceholder')" /></label>
+            <div class="filter-date-range"><span>{{ t('Mobile.filterDate') }}</span><input v-model="historyFilters.from" type="date" required :max="historyFilters.to" :aria-label="t('Mobile.historyFrom')" /><span class="date-separator" aria-hidden="true">—</span><input v-model="historyFilters.to" type="date" required :min="historyFilters.from" :aria-label="t('Mobile.historyTo')" /></div>
+            <Alert v-if="filterError" class="filter-wide" type="warning" :message="t('Mobile.filterOptionsFailed')" />
+            <div class="history-filter-actions filter-wide"><Button :disabled="loading" @click="searchHistory(true)">{{ t('Mobile.reset') }}</Button><Button html-type="submit" type="primary" :loading="loading">{{ t('Mobile.search') }}</Button></div>
           </form>
           <div v-if="loading && !records.length" class="empty"><Spin /></div>
           <div v-else-if="error" class="empty"><Button @click="load()">{{ t('Mobile.retry') }}</Button></div>
           <template v-else>
             <div v-if="!records.length" class="empty"><p>{{ t(historyScope === 'authorized' && canReadProjectHistory ? 'Mobile.emptyProjectHistory' : 'Mobile.emptyHistory') }}</p></div>
             <button v-for="item in records" :key="item.id" type="button" class="panel history-card" @click="record = item">
-              <div class="card-heading"><h2>{{ item.pointName }}</h2><span :class="`result-${enumValue(item.result)}`">{{ t(`Mobile.${enumValue(item.result) || 'not_evaluated'}`) }}</span></div>
+              <div class="card-heading"><h2>{{ item.pointName }}</h2></div>
               <p class="muted">{{ item.categoryName || '—' }} · {{ item.levelName || '—' }}</p>
               <p class="muted">{{ t('Mobile.user') }}：{{ item.userName || '—' }} · {{ item.projectName || '—' }}</p>
               <p class="muted">{{ t('Mobile.window') }}：{{ dateTime(item.periodStartTime) }} ～ {{ dateTime(item.periodEndTime) }}</p>

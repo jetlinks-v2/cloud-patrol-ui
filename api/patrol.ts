@@ -1,5 +1,7 @@
 import { request } from './request'
 import type { ConfigEntity, Resource, Query, Page, Task, TaskGroup, Execution, Person, Answer, AttachmentReceipt, CollectionMetadata } from './types'
+import { selectedProject } from '../composables/useProjects'
+import { waitForRecordExport, type RecordExportStatus } from '../model/record-export'
 const prefix = '/park/patrol'
 // 编辑表单可以独立选择所属项目，显式项目优先于列表筛选。
 const projectOptions = (projectId?: string) => projectId ? { headers: { 'X-Patrol-Project': projectId } } : undefined
@@ -21,12 +23,22 @@ export const queryRecordPeriods = (query: Query) =>
 export const queryTaskGroups = (query: Query, options?: { signal?: AbortSignal }) =>
   request.post<Page<TaskGroup>>(`${prefix}/task-groups/_query`, query, options)
 /** 当前条件完整导出，由后端统一处理权限和数量上限。 */
-export async function exportTaskGroups(query: Query) {
-  const response = await request.post<ArrayBuffer>(`${prefix}/task-groups/export`, query, { responseType: 'arraybuffer' })
+export async function exportTaskGroups(query: Query, progress?: (status: RecordExportStatus) => void) {
+  // 固定点击导出时的项目上下文，避免等待期间切换筛选导致找不到任务或下载范围变化。
+  const options = { timeout: 0, headers: { 'X-Patrol-Project': selectedProject() || '' } }
+  const created = await request.post<RecordExportStatus>(`${prefix}/task-groups/export-jobs`, query, options)
+  if (!created.success) throw new Error('error.patrol_record_export_failed')
+  const id = await waitForRecordExport(created.result, async jobId => {
+    const response = await request.get<RecordExportStatus>(`${prefix}/task-groups/export-jobs/${encodeURIComponent(jobId)}`, undefined, options)
+    if (!response.success) throw new Error('error.patrol_record_export_failed')
+    return response.result
+  }, progress)
+  const response = await request.get<ArrayBuffer>(`${prefix}/task-groups/export-jobs/${encodeURIComponent(id)}/file`, undefined,
+    { ...options, responseType: 'arraybuffer' })
   const url = URL.createObjectURL(new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
   const anchor = document.createElement('a')
-  anchor.href = url; anchor.download = '点位巡更记录.xlsx'; anchor.click()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
+  anchor.href = url; anchor.download = '点位巡更记录.xlsx'; document.body.appendChild(anchor); anchor.click(); anchor.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 60000)
 }
 export const queryExecutions = (query: Query) =>
   request.post<Page<Execution>>(`${prefix}/executions/_query`, query)

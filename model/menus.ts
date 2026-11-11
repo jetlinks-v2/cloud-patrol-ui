@@ -4,6 +4,11 @@ import { isProjectApplicationScope } from '@jetlinks-web-core/utils/application-
 const isPatrolRoot = (menu: MenuItem) => menu.code === 'cloud-patrol'
 const isSystemMenu = (menu: MenuItem) => menu.code === 'patrol/system' || menu.code === 'charging/basic'
 
+// 已初始化环境可能仍下发旧预警菜单，统一移除入口，不依赖重新授权或修改 SaaS。
+const removeWarningMenu = (menus: MenuItem[]): MenuItem[] => menus
+  .filter(menu => menu.code !== 'patrol/warnings' && menu.id !== 'patrol-warnings')
+  .map(menu => menu.children ? { ...menu, children: removeWarningMenu(menu.children) } : menu)
+
 /** 公共页面仍由 property-base-ui 提供；巡更保留自己的菜单 ID 和授权节点。 */
 export const createPatrolSystemMenu = (shared: MenuItem): MenuItem => ({
   ...shared,
@@ -29,6 +34,7 @@ const resolveSystemRoutes = (menu: MenuItem): MenuItem => ({
 export const patrolMenuFilter: MenuFilterDefinition = {
   code: 'patrol-application-navigation',
   filter(menus, { applicationScope }) {
+    menus = removeWarningMenu(menus)
     if (!applicationScope?.trim() || isProjectApplicationScope(applicationScope)) return menus
     if (!menus.some(menu => isPatrolRoot(menu) || menu.code.startsWith('patrol/'))) return menus
 

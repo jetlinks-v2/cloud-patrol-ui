@@ -6,12 +6,12 @@ import { readQrImage } from './image'
 export function usePointScanner(resolve: (raw: string) => Promise<MobileTask[]>, select: (row: MobileTask) => void) {
   const matches = ref<MobileTask[]>([]), busy = ref(false), error = ref(''), scanning = ref(false)
   let operation: AbortController | undefined
-  async function start(file: File) {
+  async function run(read: () => Promise<string>) {
     operation?.abort()
     const current = operation = new AbortController()
     matches.value = []; error.value = ''; busy.value = false; scanning.value = true
     try {
-      const raw = await readQrImage(file)
+      const raw = await read()
       if (current.signal.aborted) return
       scanning.value = false; busy.value = true
       const rows = await resolve(raw)
@@ -27,5 +27,5 @@ export function usePointScanner(resolve: (raw: string) => Promise<MobileTask[]>,
     }
   }
   onScopeDispose(() => operation?.abort())
-  return { matches, busy, scanning, error, start }
+  return { matches, busy, scanning, error, start: (file: File) => run(() => readQrImage(file)), startCode: (code: string) => run(() => Promise.resolve(code)) }
 }

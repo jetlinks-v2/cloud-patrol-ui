@@ -1,8 +1,8 @@
 import type { Execution, Page, Query, AttachmentReceipt, ConfigEntity } from '../api/types'
 import type { MobileTask, Submission } from './model'
-import { request } from './transport'
+import { request, type MobileContext } from './transport'
 import { patrolProject } from './projectScope'
-export const myTasks = (date: string, mine = true) => request<MobileTask[]>('/park/patrol/mobile/tasks/_query', 'POST', { date, mine })
+export const myTasks = (date: string, mine = true, nfcCode?: string) => request<MobileTask[]>('/park/patrol/mobile/tasks/_query', 'POST', { date, mine, ...(nfcCode == null ? {} : { nfcCode }) })
 /** 按授权分页读取完整选项；分类超过一页时不能静默丢失候选。 */
 export async function configurationOptions(resource: 'categories' | 'levels' | 'tags' | 'roles' | 'standards' | 'persons', projectId: string | undefined = patrolProject.value): Promise<ConfigEntity[]> {
   const rows: ConfigEntity[] = []
@@ -17,10 +17,10 @@ export async function configurationOptions(resource: 'categories' | 'levels' | '
 export const myHistory = (query: Query) => request<Page<Execution>>('/park/patrol/mobile/history/_query', 'POST', query)
 /** 管理人员的历史查询沿用PC资产过滤接口，不能用移动端本人接口冒充全员记录。 */
 export const authorizedHistory = (query: Query) => request<Page<Execution>>('/park/patrol/executions/_query', 'POST', query)
-export const submit = (body: Submission) => request<Execution>('/park/patrol/executions', 'POST', body)
-export const upload = (file: File, projectId?: string) => {
+export const submit = (body: Submission, projectId?: string, expected?: Pick<MobileContext, 'applicationId' | 'userId'>) => request<Execution>('/park/patrol/executions', 'POST', body, projectId, expected)
+export const upload = (file: File, projectId?: string, expected?: Pick<MobileContext, 'applicationId' | 'userId'>) => {
   const body = new FormData(); body.append('file', file)
-  return request<AttachmentReceipt>('/park/patrol/attachments/evidence', 'POST', body, projectId)
+  return request<AttachmentReceipt>('/park/patrol/attachments/evidence', 'POST', body, projectId, expected)
 }
 export const preview = (id: string, projectId?: string) => request<{ dataUrl: string }>(`/park/patrol/attachments/${encodeURIComponent(id)}/preview`, 'GET', undefined, projectId)
 

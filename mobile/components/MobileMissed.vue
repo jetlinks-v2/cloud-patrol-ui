@@ -13,13 +13,12 @@ watch(saving, value => emit('busy', value))
 watch(state, () => { selection.value = [] })
 </script>
 <template>
-  <form class="panel history-filters" @submit.prevent="load">
-    <label><span>{{ t('Patrol.missed.createdFrom') }}</span><input v-model="from" type="date" required :max="to" /></label>
-    <label><span>{{ t('Patrol.missed.createdTo') }}</span><input v-model="to" type="date" required :min="from" /></label>
-    <label><span>{{ t('Patrol.missed.status') }}</span><select v-model="state"><option value="">{{ t('Mobile.all') }}</option>
+  <form class="history-filters" @submit.prevent="load">
+    <label class="filter-wide"><span>{{ t('Patrol.missed.status') }}</span><select v-model="state"><option value="">{{ t('Mobile.all') }}</option>
       <option v-for="value in ['none', 'pending', 'approved', 'rejected', 'withdrawn']" :key="value" :value="value">{{ t(`Patrol.missed.states.${value}`) }}</option>
     </select></label>
-    <Button html-type="submit" :loading="loading" :disabled="saving">{{ t('Mobile.search') }}</Button>
+    <div class="filter-date-range"><span>{{ t('Mobile.filterDate') }}</span><input v-model="from" type="date" required :max="to" :aria-label="t('Patrol.missed.createdFrom')" /><span class="date-separator" aria-hidden="true">—</span><input v-model="to" type="date" required :min="from" :aria-label="t('Patrol.missed.createdTo')" /></div>
+    <div class="history-filter-actions filter-wide"><Button html-type="submit" type="primary" :loading="loading" :disabled="saving">{{ t('Mobile.search') }}</Button></div>
   </form>
   <Alert v-if="error" class="notice" type="error" :message="te(error) ? t(error) : error" show-icon />
   <div v-if="loading" class="empty"><Spin /></div>

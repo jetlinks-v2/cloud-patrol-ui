@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const directory = fileURLToPath(new URL('..', import.meta.url))
 const bundle = await build({
-  stdin: { contents: `export * from './mobile/auth/session.ts'; export * from './mobile/auth/useLogin.ts'; export { patrolProject } from './mobile/projectScope.ts'`, resolveDir: directory },
+  stdin: { contents: `export * from './mobile/auth/session.ts'; export * from './mobile/auth/useLogin.ts'; export * from './mobile/auth/useLoginVerification.ts'; export { patrolProject } from './mobile/projectScope.ts'`, resolveDir: directory },
   bundle: true, write: false, platform: 'node', format: 'cjs', external: ['vue'],
   define: { 'import.meta.env.BASE_URL': JSON.stringify('/patrol-h5/') },
   plugins: [{ name: 'rsa-contract', setup(builder) {
@@ -40,15 +40,24 @@ async function fixture(run) {
   finally { for (const [key, value] of Object.entries(previous)) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value } }
 }
 
-test('H5独立登录：公开认证请求不携带PC上下文，RSA后核验应用并收窄业务项目', () => fixture(async vm => {
+async function waitFor(check) {
+  for (let count = 0; count < 30; count++) { if (check()) return; await new Promise(resolve => setImmediate(resolve)) }
+  assert.fail('expected login verification state')
+}
+
+test('H5应用登录：原样提交账号，公开认证不携带PC上下文，RSA后核验应用并收窄业务项目', () => fixture(async vm => {
   await vm.initializeConfig()
   const login = vm.useLogin()
-  await login.reloadCaptcha()
-  Object.assign(login.form, { username: 'test2', password: 'secret', verifyCode: '1234' })
-  assert.equal(await login.login(), true)
+  Object.assign(login.form, { username: 'test2', password: 'secret' })
+  const attempt = login.login()
+  await waitFor(() => login.verification.value)
+  assert.equal(vm.authState.session, undefined)
+  assert.equal(vm.stored.size, 0)
+  login.completeVerification({ verifyKey: 'captcha-key', verifyCode: '1234' })
+  assert.equal(await attempt, true)
   const request = vm.calls.find(call => call.url.endsWith('/authorize/login')).options
   assert.deepEqual(request.headers, { 'Content-Type': 'application/json' })
-  assert.deepEqual(JSON.parse(request.body), { username: 'test2@CQHT', password: 'encrypted:secret', verifyKey: 'captcha-key', verifyCode: '1234', expires: 3600000, encryptId: 'encrypt-id' })
+  assert.deepEqual(JSON.parse(request.body), { username: 'test2', password: 'encrypted:secret', verifyKey: 'captcha-key', verifyCode: '1234', expires: 3600000, encryptId: 'encrypt-id' })
   assert.equal(globalThis.rsaKey, 'public-key')
   assert.equal(vm.authState.authorization.user.id, 'employee')
   assert.equal(login.form.password, '')
@@ -94,8 +103,7 @@ test('401回登录、403保留会话；旧请求不能删除或返回新账号�
 test('加密失败不明文降级，没有应用权限不进入业务页', () => fixture(async vm => {
   await vm.initializeConfig()
   const login = vm.useLogin()
-  await login.reloadCaptcha()
-  Object.assign(login.form, { username: 'test2@CQHT', password: 'secret', verifyCode: '1234' })
+  Object.assign(login.form, { username: 'test2@CQHT', password: 'secret' })
   globalThis.rsaResult = false
   assert.equal(await login.login(), false)
   assert.equal(vm.calls.some(call => call.url.endsWith('/authorize/login')), false)
@@ -104,7 +112,6 @@ test('加密失败不明文降级，没有应用权限不进入业务页', () =>
   vm.respond(url => url.endsWith('/authorize/me') ? ok({ user: { id: 'admin' }, permissions: [] })
     : url.endsWith('/authorize/login') ? ok({ token: 'token' })
       : url.endsWith('/captcha/config') ? ok({ enabled: false }) : ok({}))
-  await login.reloadCaptcha()
   assert.equal(await login.login(), false)
   assert.equal(login.error.value, 'Mobile.accessDenied')
   assert.equal(vm.authState.session, undefined)
@@ -124,4 +131,121 @@ test('拒绝跨域API及错误应用入口，退出失败仍清理本地登录',
   assert.equal(vm.authState.session, undefined)
   assert.equal(vm.stored.size, 0)
   assert.equal(vm.calls.at(-1).options.method, 'GET')
+}))
+
+test('新版挑战验证：首次403只弹验证，重试携带确认头，授权完成前不存储凭证', () => fixture(async vm => {
+  await vm.initializeConfig()
+  const login = vm.useLogin()
+  Object.assign(login.form, { username: 'plain-app-user', password: 'secret' })
+  let attempts = 0
+  vm.respond((url, options) => {
+    if (url.endsWith('/login/configs')) return ok({})
+    if (url.endsWith('/captcha/config')) return ok({ enabled: true, type: 'image', loginWithVerify: true })
+    if (url.endsWith('/authorize/login')) {
+      attempts++
+      return attempts === 1 ? { ok: false, status: 403, json: async () => ({ status: 403, result: { type: 'captcha', key: 'challenge' } }) } : ok({ token: 'verified-token' })
+    }
+    if (url.endsWith('/authorize/me')) {
+      assert.equal(vm.stored.size, 0)
+      assert.equal(vm.authState.session, undefined)
+      assert.equal(options.headers['X-Access-Token'], 'verified-token')
+      return ok(authorization)
+    }
+    return ok({})
+  })
+  const result = login.login()
+  await waitFor(() => login.verification.value)
+  assert.equal(login.verification.value.key, 'challenge')
+  assert.equal(attempts, 1)
+  login.completeVerification({ verification: { key: 'challenge', token: 'confirmed' } })
+  assert.equal(await result, true)
+  const requests = vm.calls.filter(call => call.url.endsWith('/authorize/login'))
+  assert.deepEqual(JSON.parse(requests[1].options.body), JSON.parse(requests[0].options.body))
+  assert.equal(requests[1].options.headers['x-verify-key'], 'challenge')
+  assert.equal(requests[1].options.headers['x-verify-token'], 'confirmed')
+  assert.equal(vm.authState.session.token, 'verified-token')
+}))
+
+test('取消安全验证、修改登录输入及重复点击不会创建迟到会话', () => fixture(async vm => {
+  await vm.initializeConfig()
+  const login = vm.useLogin()
+  Object.assign(login.form, { username: 'app-user', password: 'secret' })
+  let attempt = login.login()
+  await waitFor(() => login.verification.value)
+  assert.equal(await login.login(), false)
+  login.cancelVerification()
+  assert.equal(await attempt, false)
+  assert.equal(login.error.value, 'Mobile.loginCancelled')
+  assert.equal(vm.calls.some(call => call.url.endsWith('/authorize/login')), false)
+  attempt = login.login()
+  await waitFor(() => login.verification.value)
+  login.form.username = 'other-user'
+  login.completeVerification({ verifyKey: 'old', verifyCode: 'old' })
+  assert.equal(await attempt, false)
+  assert.equal(vm.stored.size, 0)
+  vm.respond(url => url.endsWith('/login/configs') ? ok({}) : url.endsWith('/captcha/config') ? ok({ enabled: false })
+    : url.endsWith('/authorize/login') ? new Promise(resolve => { globalThis.finishPatrolLogin = resolve }) : ok(authorization))
+  attempt = login.login()
+  await waitFor(() => globalThis.finishPatrolLogin)
+  login.form.tenantDomain = 'OTHER'
+  globalThis.finishPatrolLogin(ok({ token: 'late' }))
+  delete globalThis.finishPatrolLogin
+  assert.equal(await attempt, false)
+  assert.equal(vm.authState.session, undefined)
+  assert.equal(vm.stored.size, 0)
+}))
+
+test('项目编码可由用户填写，会话刷新恢复填写值，ALTCHA绑定登录账号上下文', () => fixture(async vm => {
+  vm.respond(() => ({ ok: true, json: async () => ({ ...config, tenantDomain: undefined }) }))
+  await vm.initializeConfig()
+  const login = vm.useLogin()
+  assert.equal(login.form.tenantDomain, '')
+  Object.assign(login.form, { tenantDomain: 'PROJECT', username: 'plain-user', password: 'secret' })
+  vm.respond(url => url.endsWith('/login/configs') ? ok({}) : url.endsWith('/captcha/config')
+    ? ok({ enabled: true, type: 'altcha', loginWithVerify: false, altcha: { contextUrl: '/captcha/context' } })
+    : url.endsWith('/captcha/context') ? ok({ contextToken: 'context' }) : url.endsWith('/authorize/login') ? ok({ token: 'altcha-token' }) : ok(authorization))
+  const attempt = login.login()
+  await waitFor(() => login.verification.value)
+  assert.equal(login.verification.value.contextToken, 'context')
+  assert.deepEqual(JSON.parse(vm.calls.find(call => call.url.endsWith('/captcha/context')).options.body), { operation: 'login.captcha', target: 'plain-user' })
+  login.completeVerification({ proof: 'proof', contextToken: 'context' })
+  assert.equal(await attempt, true)
+  const body = JSON.parse(vm.calls.find(call => call.url.endsWith('/authorize/login')).options.body)
+  assert.equal(body.proof, 'proof')
+  assert.equal(body.contextToken, 'context')
+  vm.respond(() => ({ ok: true, json: async () => ({ ...config, tenantDomain: undefined }) }))
+  await vm.initializeConfig()
+  assert.equal(vm.authState.session.tenantDomain, 'PROJECT')
+}))
+
+test('验证弹窗使用真实验证接口交换确认凭证，并拒绝过期ALTCHA证明', () => fixture(async vm => {
+  const { effectScope } = createRequire(import.meta.url)('vue')
+  await vm.initializeConfig()
+  const scope = effectScope(), results = []
+  const image = scope.run(() => vm.useLoginVerification({ key: 'challenge', config: { enabled: true, type: 'image' } }, result => results.push(result)))
+  try {
+    await image.load(async () => {})
+    image.imageCode.value = ' 1234 '
+    vm.respond(url => url.endsWith('/_confirm') ? ok({ token: 'confirmed' }) : ok({}))
+    await image.confirmImage()
+    assert.deepEqual(results, [{ verification: { key: 'challenge', token: 'confirmed' } }])
+    const confirm = vm.calls.at(-1)
+    assert.equal(confirm.url, '/api/verify/captcha/_confirm')
+    assert.deepEqual(JSON.parse(confirm.options.body), { key: 'challenge', provider: 'image', params: { verifyKey: 'captcha-key', verifyCode: '1234' } })
+    assert.equal(confirm.options.headers['X-Access-Token'], undefined)
+  } finally { scope.stop() }
+  const altchaScope = effectScope()
+  const altcha = altchaScope.run(() => vm.useLoginVerification({ contextToken: 'context', config: { enabled: true, type: 'altcha', altcha: { challengeUrl: '/challenge', prevalidateUrl: '/prevalidate' } } }, result => results.push(result)))
+  try {
+    vm.respond(url => url.endsWith('/prevalidate') ? ok({ proof: 'expired', expiresAt: Date.now() - 1 }) : ok({ challenge: 'challenge' }))
+    let configured
+    await altcha.load(async challenge => { configured = challenge })
+    assert.deepEqual(configured, { challenge: 'challenge' })
+    await altcha.verified('payload')
+    assert.equal(altcha.error.value, 'Mobile.verificationExpired')
+    assert.equal(results.length, 1)
+    vm.respond(() => ok({ proof: 'valid', expiresAt: Date.now() + 10000 }))
+    await altcha.verified('payload')
+    assert.deepEqual(results.at(-1), { proof: 'valid', contextToken: 'context' })
+  } finally { altchaScope.stop() }
 }))

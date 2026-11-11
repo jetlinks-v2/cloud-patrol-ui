@@ -6,7 +6,7 @@
         :before-upload="select" :disabled="uploading || loading || projectMissing">
         <a-button :loading="uploading" :disabled="projectMissing" :title="projectMissing ? t('Patrol.projects.chooseBeforeCreate') : undefined">{{ t(fileId ? 'Patrol.replaceImage' : 'Patrol.uploadImage') }}</a-button>
       </a-upload>
-      <a-button v-if="fileId" :loading="loading" :disabled="uploading" @click="preview(fileId)">{{ t('Patrol.previewImage') }}</a-button>
+      <a-button v-if="fileId && failed" :loading="loading" :disabled="uploading" @click="preview(fileId)">{{ t('Patrol.previewImage') }}</a-button>
       <a-button v-if="fileId && !readonly" danger :disabled="uploading || loading" @click="remove">{{ t('Patrol.remove') }}</a-button>
     </a-space>
     <a-typography-text v-if="!readonly && projectMissing" type="secondary">{{ t('Patrol.projects.chooseBeforeCreate') }}</a-typography-text>
@@ -26,7 +26,7 @@ const props = defineProps<{ fileId?: string | null; readonly?: boolean }>()
 const emit = defineEmits<{ 'update:fileId': [id: string | null]; busyChange: [busy: boolean] }>()
 const { t } = useI18n(), invalid = ref(false)
 const { uploading, loading, failed, dataUrl, projectMissing, upload, preview, reset, syncFile } = usePatrolImage(id => emit('update:fileId', id))
-watch(() => props.fileId, id => { syncFile(id); invalid.value = false })
+watch(() => props.fileId, id => { syncFile(id); invalid.value = false; if (id && !dataUrl.value) void preview(id) }, { immediate: true })
 watch(uploading, busy => emit('busyChange', busy))
 onBeforeUnmount(() => emit('busyChange', false))
 function select(file: File) {

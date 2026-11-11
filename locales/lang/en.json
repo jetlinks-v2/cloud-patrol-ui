@@ -5,10 +5,11 @@
     "pointQr": {
       "title": "QR code",
       "batch": "Batch QR codes",
-      "hint": "Download a point image or print all QR codes, one per page (Save as PDF is available in the print dialog). QR codes identify points; login and task permissions are still required.",
+      "hint": "Download a point image, download all QR codes as ZIP, or print to PDF. QR codes only identify points; sign-in and task permissions are still required.",
       "limit": "More than 500 points match. Narrow the filters before printing.",
       "download": "Download PNG",
-      "print": "Print QR codes / Save PDF"
+      "print": "Print QR codes / Save PDF",
+      "downloadAll": "Download all QR codes (ZIP)"
     },
     "export": "Export",
     "exportFailed": "Export failed. Please retry.",
@@ -60,6 +61,7 @@
     "cancel": "Cancel",
     "select": "Please select",
     "requiredField": "This field is required",
+    "categoryDepthHint": "Categories support up to three levels. Level three cannot have children.",
     "parent": "Parent category",
     "code": "Point code",
     "location": "Location",
@@ -131,8 +133,7 @@
     "upperLimit": "Inclusive upper limit",
     "referenceText": "Reference notes",
     "referenceHint": "Reference notes are for inspection guidance; text equality does not imply a pass.",
-    "qualifiedOptions": "Passing options",
-    "qualifiedHint": "Leave empty to disable automatic judgment. Legacy options do not receive an assumed passing value.",
+    "firstOptionHint": "The first option is normal; other answers are shown in red.",
     "photoRequired": "Image required",
     "exampleImage": "Example image",
     "uploadImage": "Upload image",
@@ -148,7 +149,7 @@
     "moveUp": "Move up",
     "moveDown": "Move down",
     "referenceRange": "Passing range",
-    "answer": "Submitted answer",
+    "answer": "Inspection answer",
     "checkResult": "Inspection result",
     "checkResults": {
       "pass": "Pass",
@@ -527,13 +528,24 @@
       },
       "pointStateLabel": "Fulfillment state",
       "progressRate": "Completion progress",
-      "dueFulfillmentRate": "Due fulfillment rate",
+      "dueFulfillmentRate": "Closed-period completion rate",
       "progressRateHint": "Effective completions / all required visits. Includes approved credits and requirements in open periods.",
       "dueFulfillmentRateHint": "Effective completions in ended periods / requirements in ended periods. Open periods are excluded. Includes approved credits; this is not an on-time check-in rate.",
       "dueBasis": "Completed / required in ended periods",
       "progressBasis": "Effective completions / all required visits",
       "noDue": "No required visits in ended periods",
       "noExpected": "No required visits"
+    },
+    "exportSelected": "Export selected",
+    "recordExport": {
+      "waiting": "Generating the export with images. Please wait and keep this page open without refreshing. Your download will start automatically.",
+      "progress": "Processed {done} / {total} daily tasks. Images and file packaging may take additional time.",
+      "limit": "More than 10000 daily tasks. Narrow the filters or export in batches.",
+      "detail_limit": "More than 100000 related details. Narrow the filters or export in batches.",
+      "image_limit": "More than 4000 images or 64MB of thumbnails. Export in batches.",
+      "busy": "Too many export jobs. Please try again later.",
+      "not_ready": "The file is not ready. Please try again later.",
+      "failed": "Patrol record export failed. Please try again later."
     }
   }
 }

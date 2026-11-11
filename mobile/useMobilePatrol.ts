@@ -26,6 +26,7 @@ export function useMobilePatrol() {
   const loading = ref(false), sending = ref(false), uploading = ref(false), error = ref('')
   const draft = ref<Draft>({ answers: [], remark: '' }), errors = ref<Record<string, string>>({})
   const images = ref<Record<string, string>>({}), total = ref(0), page = ref(0)
+  const imageRequests = new Map<string, Promise<void>>()
   const drafts = new Map<string, Draft>()
   const pending = pendingStore(sessionStorage)
   const localImages = new Set<string>()
@@ -122,6 +123,19 @@ export function useMobilePatrol() {
     const data = await api.myTasks(businessTime().format('YYYY-MM-DD'), false)
     return matchScannedTasks(raw, data, Date.now())
   }
+  async function scanNfc(raw: string): Promise<MobileTask[]> {
+    const code = raw.trim(), projectId = patrolProject.value
+    if (!code || code.length > 128) throw new Error('Mobile.nfcInvalid')
+    if (!projectId) throw new Error('Mobile.chooseProject')
+    if (locked.value) throw new Error('Mobile.submitUncertain')
+    context.value = await resolveContext()
+    if (patrolProject.value !== projectId) throw new Error('Mobile.chooseProject')
+    if (pending.read(context.value)) throw new Error('Mobile.submitUncertain')
+    const data = await api.myTasks(businessTime().format('YYYY-MM-DD'), false, code)
+    if (disposed || patrolProject.value !== projectId) throw new Error('Mobile.chooseProject')
+    const now = Date.now()
+    return data.filter(row => row.executable && now >= row.task.startTime && now < row.task.endTime && row.task.completedCount < row.task.requiredCount)
+  }
   function searchHistory(reset = false) {
     if (locked.value) return
     if (reset) historyFilters.value = defaultHistory()
@@ -164,13 +178,20 @@ export function useMobilePatrol() {
     finally { uploading.value = false }
   }
   async function preview(id: string) {
-    error.value = ''
     if (images.value[id]) return
-    try {
-      const data = await api.preview(id, selected.value?.task.projectId ?? record.value?.projectId)
-      if (!disposed) images.value[id] = data.dataUrl
-    }
-    catch (cause) { fail(cause) }
+    const projectId = selected.value?.task.projectId ?? record.value?.projectId
+    const key = JSON.stringify([projectId, id])
+    if (imageRequests.has(key)) return imageRequests.get(key)
+    // 自动加载与手动重试共享在途请求，检查项更新时不重复读取同一图片。
+    const request = (async () => {
+      try {
+        const data = await api.preview(id, projectId)
+        if (!disposed) images.value[id] = data.dataUrl
+      } catch (cause) { if (!disposed) fail(cause) }
+      finally { imageRequests.delete(key) }
+    })()
+    imageRequests.set(key, request)
+    return request
   }
   async function submit() {
     if (!selected.value || sending.value || uploading.value) return
@@ -200,5 +221,5 @@ export function useMobilePatrol() {
     } finally { sending.value = false }
   }
   return { context, date, tab, mine, missedCount, missedError, historyScope, canReadProjectHistory, people, categories, levels, historyFilters, filterError, searchHistory, loadHistoryOptions, rows, records, selected, record, success, loading, sending, uploading,
-    error, draft, errors, images, total, locked, reason, load, open, leave, changeAnswer, upload, preview, submit, scanPoint }
+    error, draft, errors, images, total, locked, reason, load, open, leave, changeAnswer, upload, preview, submit, scanPoint, scanNfc }
 }

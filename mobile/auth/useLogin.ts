@@ -1,40 +1,57 @@
-import { reactive, ref } from 'vue'
+import { getCurrentScope, onScopeDispose, reactive, ref, shallowRef, watch } from 'vue'
 import JSEncrypt from 'jsencrypt'
 import { MobileError } from '../browserSession'
-import { authState, clearSession, sessionRequest, setSession, verifySession } from './session'
+import { authState, clearSession, sessionRequest, setSession, VerificationRequired, verifySession } from './session'
 
-/** 与 SaaS 认证接口保持相同的验证码、RSA 配置和应用授权流程。 */
+export interface CaptchaConfig {
+  enabled: boolean
+  type: string
+  loginWithVerify?: boolean
+  altcha?: { contextUrl: string; challengeUrl: string; prevalidateUrl: string }
+}
+export interface CaptchaRequirement { config: CaptchaConfig; key?: string; contextToken?: string }
+export interface CaptchaResult {
+  verification?: { key: string; token: string }
+  proof?: string
+  contextToken?: string
+  verifyKey?: string
+  verifyCode?: string
+}
+
+/** 对齐应用链接登录：账号原样提交，项目编码用于应用授权，不拼接账号后缀。 */
 export function useLogin() {
-  const form = reactive({ tenantDomain: authState.config.tenantDomain, username: '', password: '', verifyKey: '', verifyCode: '' })
-  const loading = ref(false), captchaLoading = ref(false), error = ref(''), captcha = ref(''), captchaReady = ref(false)
-  const errorText = (value: unknown) => value instanceof Error ? value.message : 'Mobile.requestFailed'
-  async function reloadCaptcha() {
-    if (captchaLoading.value) return
-    captchaLoading.value = true; captchaReady.value = false; captcha.value = ''; form.verifyCode = ''; form.verifyKey = ''
-    try {
-      const config = await sessionRequest<{ enabled: boolean; type: string }>('/authorize/captcha/config', 'GET', undefined, { scoped: false })
-      if (config.enabled) {
-        if (config.type !== 'image') throw new MobileError(400, 'Mobile.captchaUnsupported')
-        const image = await sessionRequest<{ base64: string; key: string }>('/authorize/captcha/image?width=160&height=44', 'GET', undefined, { scoped: false })
-        if (!image.base64 || !image.key) throw new MobileError(502, 'Mobile.requestFailed')
-        captcha.value = image.base64; form.verifyKey = image.key
-      }
-      captchaReady.value = true
-    } catch (value) { error.value = errorText(value) }
-    finally { captchaLoading.value = false }
+  const form = reactive({ tenantDomain: authState.config.tenantDomain || '', username: '', password: '' })
+  const loading = ref(false), error = ref(''), verification = shallowRef<CaptchaRequirement>()
+  let controller: AbortController | undefined
+  let pending: { resolve: (value: CaptchaResult) => void; reject: (error: Error) => void } | undefined
+  const request = <T>(path: string, body?: unknown) => sessionRequest<T>(path, body === undefined ? 'GET' : 'POST', body,
+    { scoped: false, signal: controller?.signal })
+  const requireVerification = (requirement: CaptchaRequirement) => new Promise<CaptchaResult>((resolve, reject) => {
+    pending = { resolve, reject }; verification.value = requirement
+  })
+  function completeVerification(result: CaptchaResult) {
+    const current = pending; pending = undefined; verification.value = undefined; current?.resolve(result)
   }
+  function cancelVerification() {
+    controller?.abort()
+    const current = pending; pending = undefined; verification.value = undefined
+    current?.reject(new MobileError(400, 'Mobile.loginCancelled'))
+  }
+  const stop = watch(() => [form.username, form.password, form.tenantDomain], () => {
+    if (loading.value) cancelVerification()
+  }, { flush: 'sync' })
+  if (getCurrentScope()) onScopeDispose(() => { cancelVerification(); stop() })
+
   async function login() {
-    if (loading.value || !captchaReady.value) return false
+    if (loading.value) return false
     loading.value = true; error.value = ''
+    const attempt = new AbortController(); controller = attempt
+    const input = { ...form }
     try {
-      const domain = form.tenantDomain.trim(), username = form.username.trim()
-      if (!domain || !username || !form.password || captcha.value && !form.verifyCode.trim())
-        throw new MobileError(400, 'Mobile.loginRequired')
-      // 账号后缀与输入域保持一致，避免认证成功后使用另一个域访问业务应用。
-      if (username.includes('@') && username.slice(username.lastIndexOf('@') + 1) !== domain)
-        throw new MobileError(400, 'Mobile.loginDomainMismatch')
-      const config = await sessionRequest<{ encrypt?: { enabled: boolean; id: string; publicKey: string } }>('/authorize/login/configs', 'GET', undefined, { scoped: false })
-      let password = form.password
+      const domain = input.tenantDomain.trim(), username = input.username.trim()
+      if (!domain || !username || !input.password) throw new MobileError(400, 'Mobile.loginRequired')
+      const config = await request<{ encrypt?: { enabled: boolean; id: string; publicKey: string } }>('/authorize/login/configs')
+      let password = input.password
       if (config.encrypt?.enabled) {
         if (!config.encrypt.id || !config.encrypt.publicKey) throw new MobileError(400, 'Mobile.passwordEncryptFailed')
         const rsa = new JSEncrypt(); rsa.setPublicKey(config.encrypt.publicKey)
@@ -42,22 +59,43 @@ export function useLogin() {
         if (!encrypted) throw new MobileError(400, 'Mobile.passwordEncryptFailed')
         password = encrypted
       }
-      const result = await sessionRequest<{ token: string }>('/authorize/login', 'POST', {
-        username: username.includes('@') ? username : `${username}@${domain}`, password,
-        verifyKey: form.verifyKey, verifyCode: form.verifyCode.trim(), expires: 3600000,
-        encryptId: config.encrypt?.enabled ? config.encrypt.id : undefined,
-      }, { scoped: false })
+      const captcha = await request<CaptchaConfig>('/authorize/captcha/config')
+      let proof: CaptchaResult = {}
+      // 兼容旧图形验证码配置；新版平台仅在需要时返回验证挑战。
+      if (captcha.enabled && captcha.loginWithVerify !== true) {
+        if (captcha.type === 'altcha') {
+          if (!captcha.altcha) throw new MobileError(400, 'Mobile.verificationUnavailable')
+          const context = await request<{ contextToken: string }>(captcha.altcha.contextUrl, { operation: 'login.captcha', target: username })
+          if (!context.contextToken) throw new MobileError(502, 'Mobile.verificationUnavailable')
+          proof = await requireVerification({ config: captcha, contextToken: context.contextToken })
+        } else proof = await requireVerification({ config: captcha })
+      }
+      const body = { username, password, encryptId: config.encrypt?.enabled ? config.encrypt.id : undefined, expires: 3600000, ...proof }
+      let result: { token: string }
+      try { result = await request('/authorize/login', body) }
+      catch (value) {
+        if (!(value instanceof VerificationRequired)) throw value
+        const completed = await requireVerification({ config: captcha, key: value.key })
+        if (!completed.verification) throw new MobileError(400, 'Mobile.verificationRequired')
+        result = await sessionRequest('/authorize/login', 'POST', body,
+          { scoped: false, signal: attempt.signal, verification: completed.verification })
+      }
       if (!result.token) throw new MobileError(502, 'Mobile.requestFailed')
-      setSession({ token: result.token, applicationId: authState.config.applicationId, tenantDomain: domain })
-      await verifySession()
-      form.password = ''; form.verifyCode = ''
+      const session = { token: result.token, applicationId: authState.config.applicationId, tenantDomain: domain }
+      // 应用权限验证通过后才保存 token，避免未授权会话短暂进入业务页。
+      const authorization = await verifySession(session, attempt.signal)
+      if (attempt.signal.aborted) throw new MobileError(400, 'Mobile.loginCancelled')
+      controller = undefined
+      setSession(session); authState.authorization = authorization
+      loading.value = false; form.password = ''
       return true
     } catch (value) {
-      clearSession(); error.value = errorText(value); await reloadCaptcha()
+      clearSession()
+      error.value = attempt.signal.aborted ? 'Mobile.loginCancelled' : value instanceof Error ? value.message : 'Mobile.requestFailed'
       return false
-    } finally { loading.value = false }
+    } finally { controller = undefined; pending = undefined; verification.value = undefined; loading.value = false }
   }
-  return { form, loading, error, captcha, captchaLoading, captchaReady, reloadCaptcha, login }
+  return { form, loading, error, verification, completeVerification, cancelVerification, login }
 }
 
 export async function logout() {

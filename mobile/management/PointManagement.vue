@@ -11,7 +11,7 @@ const emit = defineEmits<{ screen: [value: { key: string; depth: number; title: 
 const { t, te } = useI18n()
 const { rows, categories, tags, roles, levels, standards, name, category, total, loading, saving, error, saved,
   editor, qr, assignmentCategory, rules, assignmentLoading, assignmentError, canSave, canConfigure, canReadConfiguration,
-  load, search, edit, close, save, categoryChange, configure, saveRules } = usePointManagement()
+  load, search, edit, close, save, configure, saveRules } = usePointManagement()
 const qrCard = ref<HTMLElement>()
 const currentRoles = computed(() => rules.value?.map(rule => rule.roleId).filter(Boolean) || [])
 const allStaff = computed(() => rules.value?.some(rule => !rule.roleId))
@@ -63,21 +63,23 @@ defineExpose({ back: close })
     </template>
   </template>
   <template v-else-if="!editor">
-    <form class="panel history-filters" @submit.prevent="search()">
-      <label><span>{{ t('Mobile.category') }}</span><TreeSelect v-model:value="category" :tree-data="categoryTree(listCategories)" tree-default-expand-all show-search allow-clear tree-node-filter-prop="title" /></label>
+    <form class="history-filters" @submit.prevent="search()">
+      <label><span>{{ t('Mobile.filterCategory') }}</span><TreeSelect v-model:value="category" :tree-data="categoryTree(listCategories)" tree-default-expand-all show-search allow-clear tree-node-filter-prop="title" /></label>
       <label><span>{{ t('Mobile.pointName') }}</span><Input v-model:value="name" :maxlength="128" :placeholder="t('Mobile.namePlaceholder')" /></label>
-      <div class="history-filter-actions"><Button :disabled="loading" @click="search(true)">{{ t('Mobile.reset') }}</Button><Button type="primary" html-type="submit" :loading="loading">{{ t('Mobile.search') }}</Button></div>
+      <div class="history-filter-actions filter-wide"><Button :disabled="loading" @click="search(true)">{{ t('Mobile.reset') }}</Button><Button type="primary" html-type="submit" :loading="loading">{{ t('Mobile.search') }}</Button></div>
     </form>
     <div class="management-toolbar"><span>{{ t('Mobile.pointTotal', { total }) }}</span><Button v-if="canSave" type="primary" :disabled="loading" @click="edit()">{{ t('Mobile.addPoint') }}</Button></div>
     <div v-if="loading && !rows.length" class="empty"><Spin /></div>
     <div v-else-if="error && !rows.length" class="empty"><Button @click="load()">{{ t('Mobile.retry') }}</Button></div>
     <div v-else-if="!rows.length" class="empty">{{ t('Mobile.emptyPoints') }}</div>
-    <button v-for="item in rows" :key="item.id" type="button" class="panel history-card" :disabled="loading" @click="edit(item)">
+    <button v-for="item in rows" :key="item.id" type="button" class="panel history-card management-point-card" :disabled="loading" @click="edit(item)">
       <div class="card-heading"><h2>{{ item.name }}</h2><span>{{ t(canSave ? 'Patrol.edit' : 'Mobile.details') }} ›</span></div>
-      <p class="muted">{{ t('Patrol.code') }}：{{ item.code || '—' }}</p>
-      <p class="muted">{{ t('Mobile.pointLocation') }}：{{ item.location || '—' }}</p>
-      <p class="muted">{{ t('Patrol.projects.label') }}：{{ item.projectName || '—' }}</p>
-      <p class="muted">{{ (item.categoryIds || [item.categoryId]).map(id => categories.find(row => row.id === id)?.name).filter(Boolean).join('、') }}</p>
+      <dl class="point-facts">
+        <dt>{{ t('Patrol.code') }}</dt><dd>{{ item.code || '—' }}</dd>
+        <dt>{{ t('Mobile.pointLocation') }}</dt><dd>{{ item.location || '—' }}</dd>
+        <dt>{{ t('Patrol.projects.label') }}</dt><dd>{{ item.projectName || '—' }}</dd>
+        <dt>{{ t('Mobile.category') }}</dt><dd>{{ (item.categoryIds || [item.categoryId]).map(id => categories.find(row => row.id === id)?.name).filter(Boolean).join('、') || '—' }}</dd>
+      </dl>
     </button>
     <Button v-if="rows.length < total" block :loading="loading" @click="load(true)">{{ t('Mobile.more') }}</Button>
   </template>
@@ -85,6 +87,15 @@ defineExpose({ back: close })
   <div v-if="editor" v-show="!qr && !assignmentCategory">
     <Alert v-if="saved" class="notice" type="success" show-icon :message="t('Mobile.pointSaved')" />
     <PointEditor :value="editor" :categories="categories" :tags="tags" :can-save="canSave" :can-configure="canReadConfiguration" :saving="saving"
-      @save="save" @category="categoryChange" @configure="configure" @qr="qr = true" />
+      @save="save" @configure="configure" @qr="qr = true" />
   </div>
 </template>
+<style scoped>
+.management-point-card { width: 100%; text-align: left; }
+.management-point-card .card-heading { align-items: flex-start; gap: 12px; }
+.management-point-card .card-heading h2 { min-width: 0; overflow-wrap: anywhere; }
+.management-point-card .card-heading > span { flex: none; color: #2563b8; font-size: 13px; }
+.point-facts { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: 10px 12px; margin: 16px 0 0; padding-top: 14px; border-top: 1px solid #edf1f5; font-size: 14px; line-height: 1.6; }
+.point-facts dt { color: #758397; }
+.point-facts dd { margin: 0; color: #334155; overflow-wrap: anywhere; }
+</style>

@@ -74,6 +74,7 @@ export interface ConfigEntity {
   effectiveTo?: string
   rosterPolicy?: RosterPolicy | EnumValue<RosterPolicy>
   rule?: PatrolRule
+  ruleSummary?: string[]
 }
 export interface TaskGroup {
   /** 空串表示全员任务，非平台角色 ID。 */
@@ -121,6 +122,7 @@ export interface Task {
   completedCount: number
   lastExecutionTime?: number
   levelName?: string
+  cooldownMinutes?: number
   categoryId?: string
   categoryName?: string
   standardSnapshot: CheckItem[]

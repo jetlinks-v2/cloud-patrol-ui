@@ -1,5 +1,6 @@
 import { ref, shallowRef } from 'vue'
 import { request as host, type Request } from '@jetlinks-web/core'
+import { getApplicationScopeFromLocation, getApplicationScopeHeader } from '@jetlinks-web-core/utils/application-scope'
 const request: Pick<Request, 'get'> = host
 import { findOrganization, projectTree, type OrganizationNode } from '../model/projects'
 
@@ -14,7 +15,10 @@ export function useProjects() {
     const current = ++generation
     loading.value = true; failed.value = false
     try {
-      const response = await request.get<OrganizationNode[]>('/park/patrol/projects/_tree')
+      // 刷新时从当前入口同步固定应用上下文，避免依赖宿主应用状态恢复的先后顺序。
+      const scope = getApplicationScopeHeader(getApplicationScopeFromLocation())
+      const response = await request.get<OrganizationNode[]>('/park/patrol/projects/_tree', undefined,
+        scope ? { headers: { 'X-Asset-Scope': scope } } : undefined)
       if (current !== generation) return
       if (!response.success) throw new Error('project tree failed')
       tree.value = response.result

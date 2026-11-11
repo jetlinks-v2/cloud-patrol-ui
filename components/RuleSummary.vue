@@ -1,5 +1,13 @@
 <template>
-  <div class="rule-summary">
+  <div v-if="summary?.length" class="rule-summary">
+    <div v-for="(line, index) in summary" :key="index">
+      <template v-if="line.includes('：')">
+        <strong>{{ line.slice(0, line.indexOf('：') + 1) }}</strong>{{ line.slice(line.indexOf('：') + 1) }}
+      </template>
+      <template v-else>{{ line }}</template>
+    </div>
+  </div>
+  <div v-else class="rule-summary">
     <div v-if="!rows.length">{{ t('Patrol.ruleSummary.empty') }}</div>
     <div v-for="(row, index) in rows" :key="index">
       <strong>{{ row.date || row.days.map(day => t(`Patrol.week${day}`)).join('、') }}：</strong>
@@ -18,7 +26,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { PatrolRule } from '../api/types'
 import { ruleSummaryRows, ruleWindowTime, ruleQuantity } from '../model/rules'
-const props = defineProps<{ rule?: PatrolRule }>()
+const props = defineProps<{ rule?: PatrolRule; summary?: string[] }>()
 const { t } = useI18n()
 const rows = computed(() => ruleSummaryRows(props.rule))
 </script>

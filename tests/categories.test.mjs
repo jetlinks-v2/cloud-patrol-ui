@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { categoryTree, categoryDescendants, filterCategoryTree } from '../model/categories.ts'
+import { categoryTree, categoryDescendants, filterCategoryTree, categoryDepth, categoryParentIds } from '../model/categories.ts'
 const rows = [
   { id: 'root', name: 'Building', enabled: true },
   { id: 'floor', name: 'Floor', parentId: 'root', enabled: true },
@@ -24,4 +24,25 @@ test('tree search retains ancestors and their hierarchy without dropping matchin
   assert.equal(filterCategoryTree(tree, 'missing').length, 0)
   assert.deepEqual(filterCategoryTree(tree, 'Building')[0].children, tree[0].children)
   assert.deepEqual(filterCategoryTree(tree, ''), tree)
+})
+
+// Structural changes must keep the entire subtree within three levels.
+test('category creation allows only first and second level parents', () => {
+  assert.deepEqual(rows.slice(0, 3).map(row => categoryDepth(rows, row.id)), [1, 2, 3])
+  assert.equal(categoryDepth(rows, 'other'), Infinity)
+  assert.deepEqual(categoryParentIds(rows), ['root', 'floor'])
+})
+test('moving a subtree accounts for descendants and retains only the original legacy parent', () => {
+  const tree = [...rows, { id: 'root2', name: 'Other root', enabled: true },
+    { id: 'deep', name: 'Legacy fourth level', parentId: 'room', enabled: true }]
+  assert.deepEqual(categoryParentIds(tree, tree[1]), ['root'])
+  assert.deepEqual(categoryParentIds(tree, tree[5]), ['root', 'floor', 'room', 'root2'])
+  const edited = { ...tree[1], parentId: 'room' }
+  assert.deepEqual(categoryParentIds(tree, edited), ['root'])
+  assert.deepEqual(categoryParentIds(tree, tree[0]), [])
+})
+test('cycles cannot become parents', () => {
+  const cycle = [{ id: 'a', parentId: 'b' }, { id: 'b', parentId: 'a' }]
+  assert.equal(categoryDepth(cycle, 'a'), Infinity)
+  assert.deepEqual(categoryParentIds(cycle), [])
 })

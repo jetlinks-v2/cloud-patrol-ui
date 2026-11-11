@@ -20,7 +20,7 @@ test('小程序首页按时段及角色计数，已结束的当日完成任务�
   ], '2026-11-06', 15), { ready: 2, cooldown: 1, completed: 1 })
 })
 
-test('首页状态下钻使用与数字一致的任务，今日完成包含已结束时段且可查看点位详情', () => {
+test('首页各状态统计匹配任务，今日完成筛选包含已结束时段且可查看点位详情', () => {
   const row = (id, endTime, completedCount, executable, reason = '') => ({
     task: { id, pointId: id, pointName: id, businessDate: '2026-11-06', startTime: 0, endTime, requiredCount: 2, completedCount }, executable, reason,
   })

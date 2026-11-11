@@ -39,9 +39,13 @@ export async function resolveContext(): Promise<MobileContext> {
   return context
 }
 /** 仅允许巡更相对路径；写请求不做自动重试。 */
-export async function request<T>(path: string, method: PatrolMethod = 'POST', body?: unknown, projectId: string | undefined = patrolProject.value): Promise<T> {
+export async function request<T>(path: string, method: PatrolMethod = 'POST', body?: unknown, projectId: string | undefined = patrolProject.value,
+  expected?: Pick<MobileContext, 'applicationId' | 'userId'>): Promise<T> {
   if (!path.startsWith('/park/patrol/') || path.includes('..') || path.includes('://'))
     return Promise.reject(new MobileError(400, 'Mobile.requestFailed'))
-  await resolveContext()
+  const context = await resolveContext()
+  // 离线队列的重试绑定原身份；核验后立即调用传输，不能静默换账号或项目发送旧记录。
+  if (expected && (context.applicationId !== expected.applicationId || context.userId !== expected.userId || patrolProject.value !== projectId))
+    throw new MobileError(401, 'Mobile.contextChanged')
   return host.request<T>(path, method, body, { projectId })
 }

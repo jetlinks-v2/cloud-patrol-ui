@@ -38,8 +38,10 @@ function select(value: unknown) {
 onMounted(load)
 </script>
 <style scoped>
-.mobile-project-filter { margin-bottom: 12px; }
-.mobile-project-filter > label { display: block; margin-bottom: 6px; color: #555; font-size: 13px; }
+.mobile-project-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.mobile-project-filter > label { flex: 0 0 auto; color: #555; font-size: 13px; }
+.mobile-project-filter > .ant-select { flex: 1; min-width: 0; }
+.project-load-error { flex-basis: 100%; }
 :global(.points-home) .mobile-project-filter { margin: 0 12px 12px; }
 .project-load-error { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; color: #bf3333; font-size: 13px; }
 </style>

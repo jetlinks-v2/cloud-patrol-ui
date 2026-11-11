@@ -14,8 +14,11 @@ const adapter = moduleUrl((await compile('../api/request.ts'))
       calls.push({ method, url: args[0], data: args[1], options: args[2] });
       return Promise.resolve({ success: true, result: {} });
     }]));`)
-  .replace(/import .* from ['"]\.\.\/composables\/useProjects['"];?/, "let listProject = 'list-project'; export const setListProject = value => { listProject = value }; const selectedProject = () => listProject;"))
-const api = await import(moduleUrl((await compile('../api/patrol.ts')).replace("'./request'", JSON.stringify(adapter)).replace('"./request"', JSON.stringify(adapter))))
+  .replace(/import .* from ['"]\.\.\/composables\/useProjects['"];?/, "let listProject = 'list-project'; export const setListProject = value => { listProject = value }; export const selectedProject = () => listProject;"))
+const api = await import(moduleUrl((await compile('../api/patrol.ts'))
+  .replace(/(['"])\.\/request\1/, JSON.stringify(adapter))
+  .replace(/import .* from ['"]\.\.\/composables\/useProjects['"];?/, `import { selectedProject } from ${JSON.stringify(adapter)};`)
+  .replace(/import .* from ['"]\.\.\/model\/record-export['"];?/, `const waitForRecordExport = async () => '';`)))
 const pointApi = await import(moduleUrl((await compile('../api/points.ts')).replace("'./request'", JSON.stringify(adapter)).replace('"./request"', JSON.stringify(adapter))))
 const { calls, setListProject } = await import(adapter)
 

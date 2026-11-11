@@ -3,7 +3,6 @@ import { normalizeItem } from './standards.ts'
 import { defaultRule } from './rule-editor.ts'
 export const resources: Resource[] = [
   'levels',
-  'warnings',
   'categories',
   'points',
   'standards',

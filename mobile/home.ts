@@ -1,7 +1,7 @@
 import type { MobileTask } from './model'
 export type HomeTaskState = 'ready' | 'cooldown' | 'completed'
 
-/** 首页数字和下钻列表使用同一筛选：今日完成保留已结束时段，避免点击后数字有值却没有记录。 */
+/** 首页按状态统计；今日完成列表复用完成筛选，保留已结束时段。 */
 export function homeTasks(rows: MobileTask[], date: string, now: number, state: HomeTaskState): MobileTask[] {
   if (state === 'completed') return rows.filter(row => (row.task.belongDate || row.task.businessDate) === date
     && row.task.completedCount >= row.task.requiredCount)
