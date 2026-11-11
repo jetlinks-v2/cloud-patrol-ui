@@ -6,9 +6,6 @@
   "type": "module",
   "main": "index.ts",
   "dependencies": {
-    "altcha": "3.2.2",
-    "jsencrypt": "3.3.2",
-    "jsqr": "1.4.0",
     "fflate": "0.8.3"
   },
   "scripts": {
@@ -16,9 +13,6 @@
     "typecheck": "vue-tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
     "typecheck:workspace": "vue-tsc --noEmit -p tsconfig.workspace.json",
-    "dev:mobile": "vite --config vite.mobile.config.ts",
-    "build:mobile": "vite build --config vite.mobile.config.ts",
-    "typecheck:mobile": "vue-tsc --noEmit -p tsconfig.mobile.json",
     "dev": "pnpm --filter jetlinks-web-core dev -- -- --module-name cloud-patrol-ui,property-base-ui,authentication-manager-ui",
     "build:with-base": "pnpm --filter jetlinks-web-core build -- -- --module-name cloud-patrol-ui,property-base-ui"
   },

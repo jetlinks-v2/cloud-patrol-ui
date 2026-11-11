@@ -1,6 +1,6 @@
-# Cloud Patrol UI · 巡更 PC 与 H5
+# Cloud Patrol UI · 巡更 PC
 
-手机端源码、构建、独立登录和授权接入见 [mobile/README.md](mobile/README.md)。H5 与 PC 共用本仓库和巡更后端；直接访问 `/patrol-h5/` 使用 SaaS 员工账号登录，不依赖 PC 会话，排班日历的 H5 入口已隐藏。以下内容主要描述 PC 宿主模块。
+巡更 H5 已拆至独立仓库 [cloud-patrol-wx-ui](https://github.com/rain-bow02/cloud-patrol-wx-ui)，源码、独立安装、登录及 APP 接入契约见该仓库 README。这里仅维护 PC 宿主模块及菜单权限；PC 手机巡更入口仍打开 `/patrol-h5/?applicationScope=<应用ID>`，H5 需独立构建发布。
 
 Vue3/TypeScript 的 JetLinks **runtime-ui 应用模块**，不是单独登录的后台。复用宿主请求、应用上下文、ConditionFilter、ProTable 和权限按钮，不注册第二个路由器或 Axios 客户端。后端在 `项目/property-management/modules/property-patrol`，由 `services/property-patrol-service` 独立启动。
 
@@ -89,7 +89,7 @@ node node_modules/vue-tsc/bin/vue-tsc.js --noEmit -p tsconfig.workspace.json
 ## 物业共享开发分支
 
 物业组共享分支为 `property/2.20-dev`；巡更变更提交范围使用 `物业-巡更`。提交并推送本仓库后，在 `saas-runtime-ui` 更新 `modules/cloud-patrol-ui` 的子模块提交，再在 `cloud.jetlinks` 更新 `runtime-ui`。同事按聚合仓库记录的提交递归更新，不使用 `--remote` 将全体子模块更新到不配套版本。当前仍为开发版本，部分管理操作与报表字段尚待对齐，不作为旧系统全功能验收版本。
-等级、标准列表支持当前筛选跨页导出XLSX；标签仅保留后端导出。等级附规则明细表、标准附检查项目明细表；最多10000条配置/100000条明细，超限需缩小筛选。读取继续受应用上下文及资产权限约束，未接入的集团/业务项目及关联人员字段不伪造。H5扫码见mobile/README.md，NFC与定位暂缓。
+等级、标准列表支持当前筛选跨页导出XLSX；标签仅保留后端导出。等级附规则明细表、标准附检查项目明细表；最多10000条配置/100000条明细，超限需缩小筛选。读取继续受应用上下文及资产权限约束，未接入的集团/业务项目及关联人员字段不伪造。H5扫码见独立仓库 cloud-patrol-wx-ui 的 README，NFC与定位暂缓。
 
 等级修改记录沿原query和资产read权限显示可信操作人、时间及业务前后值。等级、标准、分类删除使用独立 delete 功能与资产权限。CloudPatrol 模板提供这三个删除按钮作为角色授权上限，具体人员通过权限管理授予；模板开放不等于自动授予现有角色。既有环境需在巡更应用模板的菜单权限中勾选对应删除按钮，再由应用角色权限管理按职责授权，不全量初始化。
 
