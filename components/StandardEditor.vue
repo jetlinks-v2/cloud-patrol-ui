@@ -37,6 +37,6 @@ function move(index: number, direction: number) {
 }
 const add = () => emit('update:modelValue', [...props.modelValue, {
   id: crypto.randomUUID(), title: '', type: 'choice', required: true,
-  options: [t('Patrol.normal'), t('Patrol.abnormal')], qualifiedOptions: [], photoRequired: false,
+  options: [t('Patrol.normal'), t('Patrol.abnormal')], qualifiedOptions: [t('Patrol.normal')], photoRequired: false,
 }])
 </script>

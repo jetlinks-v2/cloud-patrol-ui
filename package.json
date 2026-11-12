@@ -5,11 +5,16 @@
   "private": true,
   "type": "module",
   "main": "index.ts",
+  "dependencies": {
+    "fflate": "0.8.3"
+  },
   "scripts": {
-    "build": "vite build",
+    "build": "pnpm --filter jetlinks-web-core build -- -- --module-name cloud-patrol-ui",
     "typecheck": "vue-tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
-    "typecheck:workspace": "vue-tsc --noEmit -p tsconfig.workspace.json"
+    "typecheck:workspace": "vue-tsc --noEmit -p tsconfig.workspace.json",
+    "dev": "pnpm --filter jetlinks-web-core dev -- -- --module-name cloud-patrol-ui,property-base-ui,authentication-manager-ui",
+    "build:with-base": "pnpm --filter jetlinks-web-core build -- -- --module-name cloud-patrol-ui,property-base-ui"
   },
   "peerDependencies": {
     "vue": "^3.3.4",

@@ -3,3 +3,5 @@ dist/
 .dev/
 
 .DS_Store
+
+dist-mobile/

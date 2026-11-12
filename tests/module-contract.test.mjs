@@ -3,9 +3,14 @@ import assert from 'node:assert/strict'
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { savePermission, resources } from '../model/resources.ts'
 const root = new URL('../', import.meta.url)
 const read = (path) => readFileSync(new URL(path, root), 'utf8')
-const menu = JSON.parse(read('baseMenu.json'))[0]
+const menus = JSON.parse(read('baseMenu.json'))
+const groups = menus[0].children
+const flatten = nodes => nodes.flatMap(node => node.children?.length ? flatten(node.children) : [node])
+const pages = flatten(menus.filter(menu => menu.id !== 'patrol-system'))
+const systemPages = flatten(menus.filter(menu => menu.id === 'patrol-system'))
 // 只读取物业仓库中的巡更源码，避免旧独立仓库掩盖迁移后的契约变化。
 const backend = process.env.PATROL_BACKEND_ROOT
   ? pathToFileURL(resolve(process.env.PATROL_BACKEND_ROOT) + sep)
@@ -25,10 +30,27 @@ function keys(value, prefix = '') {
     typeof item === 'object' ? keys(item, prefix + key + '.') : [prefix + key]
   )
 }
+test('page button permission expressions resolve to declared menu codes and button IDs', () => {
+  const allowed = new Set(pages.flatMap(item =>
+    (item.buttons || []).map(button => `${item.code}:${button.id}`)
+  ))
+  const cases = [
+    ...resources.map(resource => ({ file: 'components/ConfigurationPage.vue', resource })),
+  ]
+  let checked = 0
+  for (const { file, resource } of cases) {
+    for (const [, expression] of read(file).matchAll(/:has-permission="([^"]+)"/g)) {
+      const code = new Function('resource', 'savePermission', `return (${expression})`)(resource, savePermission)
+      assert(allowed.has(code), `${file} (${resource || 'tasks'}): ${code} is not a declared menu button`)
+      checked++
+    }
+  }
+  assert.equal(checked, resources.length * 2)
+})
 test('menu, actual page, backend resource, application template and asset types align', () => {
-  assert.equal(menu.children.length, 9)
+  assert.equal(pages.length, 7)
   const seen = new Set()
-  for (const item of menu.children) {
+  for (const item of pages) {
     assert(!seen.has(item.id))
     seen.add(item.id)
     assert.equal(item.owner, 'app')
@@ -41,6 +63,13 @@ test('menu, actual page, backend resource, application template and asset types 
       page === 'records'
         ? 'Execution'
         : {
+            levels: 'Level',
+            tags: 'Tag',
+            warnings: 'Warning',
+            calendar: 'Calendar',
+            coverage: 'Statistics',
+            qualification: 'Statistics',
+            personnel: 'Statistics',
             categories: 'Category',
             points: 'Point',
             standards: 'Standard',
@@ -66,15 +95,21 @@ test('Chinese and English dictionaries have identical keys and cover literal UI 
     en = JSON.parse(read('locales/lang/en.json'))
   assert.deepEqual(keys(zh).sort(), keys(en).sort())
   for (const file of [
+    'components/TaskGroupDetails.vue',
+    'components/ExecutionHistory.vue',
+    'components/CalendarDayDetails.vue',
+    'components/StatisticsPage.vue',
+    'components/statistics/StatisticsFactDetails.vue',
+    'views/patrol/calendar/index.vue',
     'components/ConfigEditor.vue',
     'components/RuleEditor.vue',
     'components/StandardEditor.vue',
     'components/StandardItemEditor.vue',
     'components/PatrolImage.vue',
     'components/InspectionResults.vue',
-    'views/patrol/tasks/index.vue',
     'views/patrol/records/index.vue',
-    'views/patrol/reports/index.vue',
+    'views/patrol/points/index.vue',
+    'components/RosterImport.vue',
   ]) {
     for (const [, key] of read(file).matchAll(/(?:t\(|'|")(Patrol\.[A-Za-z0-9.]+)(?:'|")/g))
       assert(keys(zh).includes(key), key)
@@ -83,13 +118,83 @@ test('Chinese and English dictionaries have identical keys and cover literal UI 
 
 test('menu grants expose every template asset, including the person directory user scope', () => {
   const grantable = new Set()
-  for (const item of menu.children) {
+  for (const item of pages) {
     assert.equal(item.accessSupport, 'support', `${item.id} must expose data permissions`)
     assert(item.assetTypes.includes(item.assetType))
     for (const assetType of item.assetTypes) grantable.add(assetType)
   }
-  assert.deepEqual(menu.children.find(item => item.id === 'patrol-posts').assetTypes, ['patrolPost', 'user'])
+  assert(pages.find(item => item.id === 'patrol-points').assetTypes.includes('user'))
   for (const [, assetType] of template.matchAll(/asset-type: (\w+)/g)) {
     assert(grantable.has(assetType), `Template asset ${assetType} is unavailable in menu grant editor`)
   }
+})
+
+ test('point operations replace extra navigation while calendar and unified statistics remain', () => {
+  const ids = new Set(pages.map(page => page.id))
+  for (const id of ['patrol-posts', 'patrol-rosters', 'patrol-plans', 'patrol-tasks', 'patrol-reports']) {
+    assert(!ids.has(id)); assert(!template.includes(`- id: ${id}\n`))
+  }
+  const point = pages.find(page => page.id === 'patrol-points')
+  assert(!point.buttons.some(button => button.id === 'roles'))
+  for (const id of ['assign', 'importRoster']) {
+    assert(point.buttons.some(button => button.id === id))
+    assert(template.includes(`{id: ${id}, granted: true}`))
+    assert(read('views/patrol/points/Page.vue').includes(`patrol/points:${id}`))
+  }
+  assert.equal(menus.length, 1)
+  assert.equal(menus[0].id, 'cloud-patrol')
+  assert.equal(menus[0].name, '智能巡更')
+  assert(template.includes('- id: cloud-patrol\n'))
+  assert.deepEqual(groups.map(node => node.id), [
+    'patrol-base', 'patrol-point-management', 'patrol-record-management',
+    'patrol-statistics',
+  ])
+  assert(groups.every(node => node.children?.every(child => !child.children?.length)))
+  assert(groups.find(node => node.id === 'patrol-point-management').children.some(node => node.id === 'patrol-calendar'))
+  assert.deepEqual(groups.find(node => node.id === 'patrol-statistics').children.map(node => node.id), ['patrol-coverage'])
+  assert.equal(pages.find(node => node.id === 'patrol-coverage').name, '巡更总览')
+ })
+
+test('retired warning settings have no menu, page or template grant', () => {
+  assert(!pages.some(page => page.id === 'patrol-warnings'))
+  assert(!template.includes('- id: patrol-warnings\n'))
+  assert(!template.includes('asset-type: patrolWarning'))
+  assert(!existsSync(new URL('views/patrol/warnings/index.vue', root)))
+  assert(!pages.some(page => page.id === 'patrol-tags'))
+  assert(pages.find(page => page.id === 'patrol-points').permissions.some(permission =>
+    permission.permission === 'patrol-tag' && permission.actions.includes('query')))
+})
+
+test('mobile execution grants are explicit and do not turn record queries into general writes', () => {
+  const records = pages.find(page => page.id === 'patrol-records')
+  assert(records.assetTypes.includes('user'))
+  const mobile = records.buttons.find(button => button.id === 'mobile')
+  assert.deepEqual(mobile.permissions, [
+    { permission: 'patrol-task', actions: ['query'] },
+    { permission: 'patrol-execution', actions: ['submit', 'submitMissed'] },
+    { permission: 'patrol-attachment', actions: ['save'] },
+    { permission: 'patrol-category', actions: ['query'] },
+  ])
+  assert(!records.permissions.some(permission => permission.actions.includes('submit')))
+  assert(template.includes('{id: mobile, granted: true}'))
+})
+
+test('menu button translations use the JetLinks single-message string map contract', () => {
+  for (const page of pages) {
+    for (const button of page.buttons || []) {
+      for (const message of Object.values(button.i18nMessages || {})) {
+        assert.equal(typeof message, 'string', `${page.id}:${button.id} must use SingleI18nSupportEntity, not the menu translation shape`)
+      }
+    }
+  }
+})
+
+// 基础页面只由公共模块装配，巡更不再维护菜单、路由或按钮副本。
+test('system management belongs to the shared property module', () => {
+  assert.deepEqual(systemPages, [])
+  for (const page of ['OrganizationType', 'User', 'Space', 'Customer', 'Dictionary']) {
+    assert(!existsSync(new URL(`views/patrol/${page}/index.vue`, root)))
+  }
+  assert.deepEqual(JSON.parse(read('package.json')).scripts.dev.split('--module-name ')[1].split(','),
+    ['cloud-patrol-ui', 'property-base-ui', 'authentication-manager-ui'])
 })

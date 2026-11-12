@@ -1,4 +1,4 @@
-import { ref, watch, onBeforeUnmount, type Ref } from 'vue'
+import { ref, watch, onBeforeUnmount, inject, type Ref } from 'vue'
 import { queryConfig, queryPeople } from '../api/patrol'
 import type { Resource, Term } from '../api/types'
 /** 远程候选保留已选项，搜索防抖并丢弃过期响应，避免快速输入时回显串页。 */
@@ -6,6 +6,7 @@ export function useRemoteOptions(
   resource: Resource | 'persons',
   value: Ref<string | string[] | undefined>
 ) {
+  const project = inject<Ref<string | undefined> | undefined>('patrolEditorProject', undefined)
   const options = ref<{ label: string; value: string }[]>([])
   const loading = ref(false),
     failed = ref(false)
@@ -13,6 +14,7 @@ export function useRemoteOptions(
     timer: ReturnType<typeof setTimeout> | undefined
   async function load(keyword = '', selected = false) {
     const current = ++generation
+    if (resource !== 'roles' && project && !project.value) { options.value = []; loading.value = false; return }
     loading.value = true
     failed.value = false
     const ids = Array.isArray(value.value) ? value.value : value.value ? [value.value] : []
@@ -24,7 +26,7 @@ export function useRemoteOptions(
     try {
       const query = { pageSize: 200, pageIndex: 0, terms, sorts: [{ name: 'name', order: 'asc' }] }
       const response =
-        resource === 'persons' ? await queryPeople(query) : await queryConfig(resource, query)
+        resource === 'persons' ? await queryPeople(query, project?.value) : await queryConfig(resource, query, project?.value)
       if (current !== generation) return
       if (!response.success) {
         failed.value = true
@@ -58,6 +60,12 @@ export function useRemoteOptions(
     },
     { immediate: true }
   )
+  if (project) watch(project, () => {
+    generation++
+    clearTimeout(timer)
+    options.value = []
+    void load()
+  })
   onBeforeUnmount(() => {
     clearTimeout(timer)
     generation++
