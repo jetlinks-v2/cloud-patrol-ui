@@ -1,6 +1,6 @@
 # Cloud Patrol UI · 巡更 PC
 
-巡更 H5 已拆至独立仓库 [cloud-patrol-wx-ui](https://github.com/rain-bow02/cloud-patrol-wx-ui)，源码、独立安装、登录及 APP 接入契约见该仓库 README。这里仅维护 PC 宿主模块及菜单权限；PC 手机巡更入口仍打开 `/patrol-h5/?applicationScope=<应用ID>`，H5 需独立构建发布。
+巡更 H5 已拆至独立仓库 [cloud-patrol-wx-ui](https://github.com/jetlinks-v2/cloud-patrol-wx-ui)，源码、独立安装、登录及 APP 接入契约见该仓库 README。这里仅维护 PC 宿主模块及菜单权限；PC 手机巡更入口仍打开 `/patrol-h5/?applicationScope=<应用ID>`，H5 需独立构建发布。
 
 Vue3/TypeScript 的 JetLinks **runtime-ui 应用模块**，不是单独登录的后台。复用宿主请求、应用上下文、ConditionFilter、ProTable 和权限按钮，不注册第二个路由器或 Axios 客户端。后端在 `项目/property-management/modules/property-patrol`，由 `services/property-patrol-service` 独立启动。
 
