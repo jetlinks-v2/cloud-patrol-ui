@@ -301,6 +301,12 @@
                 ]
               },
               {
+                "permission": "user",
+                "actions": [
+                  "query"
+                ]
+              },
+              {
                 "permission": "patrol-plan",
                 "actions": [
                   "query"

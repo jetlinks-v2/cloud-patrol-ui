@@ -179,6 +179,15 @@ test('mobile execution grants are explicit and do not turn record queries into g
   assert(template.includes('{id: mobile, granted: true}'))
 })
 
+test('point role candidates grant both role and member queries without directory writes', () => {
+  const points = pages.find(page => page.id === 'patrol-points')
+  // PatrolRoleService 先查应用角色，再通过 authService:user 解析可读成员；缺少任一查询权限都会返回 403。
+  for (const permission of ['role', 'user']) {
+    assert.deepEqual(points.permissions.find(item => item.permission === permission)?.actions, ['query'])
+    assert(points.assetTypes.includes(permission))
+  }
+})
+
 test('menu button translations use the JetLinks single-message string map contract', () => {
   for (const page of pages) {
     for (const button of page.buttons || []) {
