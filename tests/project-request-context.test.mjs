@@ -2,9 +2,15 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import ts from 'typescript'
 import { readFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 const moduleUrl = source => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`
 const compile = source => ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ES2022 } }).outputText
-const shared = await readFile(new URL('../../../../sass平台/cloud.jetlinks/runtime-ui/jetlinks-web-core/src/utils/application-scope.ts', import.meta.url), 'utf8')
+const sharedPath = [
+  new URL('../../../jetlinks-web-core/src/utils/application-scope.ts', import.meta.url),
+  new URL('../../../../sass平台/cloud.jetlinks/runtime-ui/jetlinks-web-core/src/utils/application-scope.ts', import.meta.url),
+].find(path => existsSync(path))
+assert(sharedPath, 'Check out runtime-ui with jetlinks-web-core before running this contract test')
+const shared = await readFile(sharedPath, 'utf8')
 const projectModel = await readFile(new URL('../model/projects.ts', import.meta.url), 'utf8')
 let source = compile(await readFile(new URL('../composables/useProjects.ts', import.meta.url), 'utf8'))
 source = source.replaceAll("'vue'", JSON.stringify(moduleUrl('export const ref=value=>({value});export const shallowRef=ref;')))
