@@ -43,18 +43,11 @@
           <a-descriptions-item :label="t('Patrol.receiveTime')">{{
             dateTime(selected.receiveTime)
           }}</a-descriptions-item>
-          <a-descriptions-item
-            v-for="item in selected.standardSnapshot"
-            :key="item.id"
-            :label="item.title"
-            >{{
-              selected.answers.find((answer) => answer.itemId === item.id)?.value || '—'
-            }}</a-descriptions-item
-          >
           <a-descriptions-item :label="t('Patrol.remark')">{{
             selected.remark || '—'
           }}</a-descriptions-item>
         </a-descriptions>
+        <InspectionResults :key="selected.id" :record="selected" />
       </template>
     </a-drawer>
   </div>
@@ -72,6 +65,7 @@ import ConditionFilter from '@jetlinks-web-core/components/ConditionFilter'
 import { queryExecutions } from '../../../api/patrol'
 import { dateTime } from '../../../model/display'
 import type { Execution, Query } from '../../../api/types'
+import InspectionResults from '../../../components/InspectionResults.vue'
 const { t } = useI18n()
 const params = ref<Query>({ terms: [] }),
   selected = ref<Execution>()

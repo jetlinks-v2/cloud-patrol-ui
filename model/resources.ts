@@ -1,4 +1,5 @@
 import type { Resource, ConfigEntity } from '../api/types'
+import { normalizeItem } from './standards.ts'
 export const resources: Resource[] = [
   'categories',
   'points',
@@ -29,7 +30,7 @@ export function draftOf(resource: Resource, source?: ConfigEntity): ConfigEntity
   const draft: ConfigEntity = source
     ? (JSON.parse(JSON.stringify(source)) as ConfigEntity)
     : { name: '', enabled: true, description: '' }
-  if (resource === 'standards') draft.items ??= []
+  if (resource === 'standards') draft.items = (draft.items ?? []).map(normalizeItem)
   if (resource === 'posts') draft.userIds ??= []
   if (resource === 'plans') {
     draft.rule ??= { weekly: {}, dates: {}, cooldownMinutes: 0 }

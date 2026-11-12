@@ -20,7 +20,17 @@ export interface CheckItem {
   title: string
   required: boolean
   options: string[]
+  type?: ItemType | EnumValue<ItemType> | null
+  lowerLimit?: string | number | null
+  upperLimit?: string | number | null
+  referenceText?: string
+  qualifiedOptions?: string[]
+  photoRequired?: boolean
+  exampleFileId?: string | null
 }
+export type ItemType = 'number' | 'text' | 'choice' | 'image'
+export type CheckResult = 'pass' | 'fail' | 'not_evaluated'
+export interface AttachmentReceipt { id: string; name: string; mediaType: string; length: number }
 export interface ConfigEntity {
   id?: string
   name: string
@@ -61,7 +71,8 @@ export interface Task {
 }
 export interface Answer {
   itemId: string
-  value: string
+  value?: string | null
+  attachmentId?: string | null
 }
 export interface Execution {
   id: string
@@ -73,6 +84,8 @@ export interface Execution {
   remark?: string
   answers: Answer[]
   standardSnapshot: CheckItem[]
+  result?: CheckResult | EnumValue<CheckResult> | null
+  itemResults?: { itemId: string; result: CheckResult | EnumValue<CheckResult> }[]
 }
 export interface Person {
   id: string

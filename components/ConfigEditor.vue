@@ -5,8 +5,8 @@
     :width="800"
     @close="emit('close')"
   >
-    <a-config-provider :component-disabled="readonly">
-      <a-form ref="form" :model="model" layout="vertical" :disabled="readonly">
+    <a-config-provider :component-disabled="readonly || imageBusy">
+      <a-form ref="form" :model="model" layout="vertical" :disabled="readonly || imageBusy">
         <a-form-item
           name="name"
           :label="t('Patrol.name')"
@@ -30,9 +30,11 @@
             ><a-input v-model:value="model.nfcCode" :maxlength="128"
           /></a-form-item>
         </template>
-        <a-form-item v-if="resource === 'standards'" :label="t('Patrol.items')"
+        <a-form-item v-if="resource === 'standards'" name="items" :label="t('Patrol.items')" :rules="standardRules"
           ><StandardEditor
             :model-value="model.items || []"
+            :readonly="readonly"
+            @busy-change="imageBusy = $event"
             @update:model-value="model.items = $event"
         /></a-form-item>
         <a-form-item v-if="resource === 'posts'" :label="t('Patrol.members')"
@@ -92,7 +94,7 @@
     <template #footer
       ><a-space
         ><a-button @click="emit('close')">{{ t('Patrol.cancel') }}</a-button
-        ><a-button v-if="!readonly" type="primary" :loading="saving" @click="save">{{
+        ><a-button v-if="!readonly" type="primary" :loading="saving" :disabled="imageBusy" @click="save">{{
           t('Patrol.save')
         }}</a-button></a-space
       ></template
@@ -122,6 +124,7 @@ import StandardEditor from './StandardEditor.vue'
 import RuleEditor from './RuleEditor.vue'
 import TimestampInput from './TimestampInput.vue'
 import { draftOf } from '../model/resources'
+import { standardError } from '../model/standards'
 import type { ConfigEntity, Resource } from '../api/types'
 const props = defineProps<{
   resource: Resource
@@ -133,8 +136,14 @@ const emit = defineEmits<{ close: []; save: [value: ConfigEntity] }>()
 const { t } = useI18n()
 const model = reactive(draftOf(props.resource, props.value)),
   form = ref<FormInstance>()
+const imageBusy = ref(false)
 const required = computed(() => [{ required: true, message: t('Patrol.requiredField') }])
+const standardRules = [{ validator: async () => {
+  const error = standardError(model.items ?? [])
+  if (error) throw new Error(t(error))
+} }]
 async function save() {
+  if (imageBusy.value) return
   try {
     await form.value?.validate()
   } catch {

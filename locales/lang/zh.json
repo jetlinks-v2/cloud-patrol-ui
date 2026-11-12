@@ -86,6 +86,42 @@
     "completedCount": "已巡次数",
     "completionRate": "应巡次数完成率",
     "overdueMissing": "已逾期未巡次数",
-    "saveFailed": "保存未完成，请修正输入或重试"
+    "saveFailed": "保存未完成，请修正输入或重试",
+    "itemType": "检查项类型",
+    "itemTypes": {
+      "number": "数值",
+      "text": "文本",
+      "choice": "选项",
+      "image": "图像"
+    },
+    "lowerLimit": "合格下限（含）",
+    "upperLimit": "合格上限（含）",
+    "referenceText": "参考说明",
+    "referenceHint": "参考说明仅供检查参考，不按文字是否相等自动判定合格。",
+    "qualifiedOptions": "合格选项",
+    "qualifiedHint": "留空表示此项不自动判定合格；旧标准不会默认将“正常”视为合格项。",
+    "photoRequired": "必须附图",
+    "exampleImage": "例图",
+    "uploadImage": "上传图片",
+    "replaceImage": "更换图片",
+    "previewImage": "查看图片",
+    "imageHint": "支持 JPEG、PNG、WebP，单张不超过5MB。",
+    "imageFailed": "图片操作失败，请重试",
+    "standardItemsRequired": "请配置1至100个检查项",
+    "itemTitleRequired": "请填写检查项名称（最多128字）",
+    "duplicateItems": "检查项编号不能重复",
+    "invalidOptions": "请配置不重复的可选结果，合格项必须属于可选结果",
+    "invalidLimits": "请检查数值上下限：最多18位整数、6位小数，下限不能大于上限",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "referenceRange": "合格范围",
+    "answer": "填写结果",
+    "checkResult": "检查判定",
+    "checkResults": {
+      "pass": "合格",
+      "fail": "不合格",
+      "not_evaluated": "未判定"
+    },
+    "submittedImage": "提交图片"
   }
 }

@@ -86,6 +86,42 @@
     "completedCount": "Completed count",
     "completionRate": "Expected-count completion rate",
     "overdueMissing": "Overdue missing count",
-    "saveFailed": "Not saved. Correct the input or retry."
+    "saveFailed": "Not saved. Correct the input or retry.",
+    "itemType": "Item type",
+    "itemTypes": {
+      "number": "Number",
+      "text": "Text",
+      "choice": "Choice",
+      "image": "Image"
+    },
+    "lowerLimit": "Inclusive lower limit",
+    "upperLimit": "Inclusive upper limit",
+    "referenceText": "Reference notes",
+    "referenceHint": "Reference notes are for inspection guidance; text equality does not imply a pass.",
+    "qualifiedOptions": "Passing options",
+    "qualifiedHint": "Leave empty to disable automatic judgment. Legacy options do not receive an assumed passing value.",
+    "photoRequired": "Image required",
+    "exampleImage": "Example image",
+    "uploadImage": "Upload image",
+    "replaceImage": "Replace image",
+    "previewImage": "View image",
+    "imageHint": "JPEG, PNG or WebP, up to 5MB per image.",
+    "imageFailed": "Image operation failed. Please retry.",
+    "standardItemsRequired": "Configure between 1 and 100 inspection items",
+    "itemTitleRequired": "Enter an item title (up to 128 characters)",
+    "duplicateItems": "Item IDs must be unique",
+    "invalidOptions": "Options must be unique; passing options must belong to the available options",
+    "invalidLimits": "Use up to 18 integer and 6 decimal digits; lower limit must not exceed upper limit",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "referenceRange": "Passing range",
+    "answer": "Submitted answer",
+    "checkResult": "Inspection result",
+    "checkResults": {
+      "pass": "Pass",
+      "fail": "Fail",
+      "not_evaluated": "Not evaluated"
+    },
+    "submittedImage": "Submitted image"
   }
 }

@@ -28,15 +28,21 @@
         },
         "owner": "app",
         "url": "/park/patrol/categories",
-        "showPage": ["patrol-category"],
+        "showPage": [
+          "patrol-category"
+        ],
         "assetType": "patrolCategory",
         "accessSupport": "support",
-        "assetTypes": ["patrolCategory"],
+        "assetTypes": [
+          "patrolCategory"
+        ],
         "sortIndex": 1,
         "permissions": [
           {
             "permission": "patrol-category",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": [
@@ -46,7 +52,9 @@
             "permissions": [
               {
                 "permission": "patrol-category",
-                "actions": ["save"]
+                "actions": [
+                  "save"
+                ]
               }
             ]
           }
@@ -64,15 +72,21 @@
         },
         "owner": "app",
         "url": "/park/patrol/points",
-        "showPage": ["patrol-point"],
+        "showPage": [
+          "patrol-point"
+        ],
         "assetType": "patrolPoint",
         "accessSupport": "support",
-        "assetTypes": ["patrolPoint"],
+        "assetTypes": [
+          "patrolPoint"
+        ],
         "sortIndex": 2,
         "permissions": [
           {
             "permission": "patrol-point",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": [
@@ -82,7 +96,9 @@
             "permissions": [
               {
                 "permission": "patrol-point",
-                "actions": ["save"]
+                "actions": [
+                  "save"
+                ]
               }
             ]
           }
@@ -100,15 +116,28 @@
         },
         "owner": "app",
         "url": "/park/patrol/standards",
-        "showPage": ["patrol-standard"],
+        "showPage": [
+          "patrol-standard"
+        ],
         "assetType": "patrolStandard",
         "accessSupport": "support",
-        "assetTypes": ["patrolStandard"],
+        "assetTypes": [
+          "patrolStandard",
+          "patrolAttachment"
+        ],
         "sortIndex": 3,
         "permissions": [
           {
             "permission": "patrol-standard",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-attachment",
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": [
@@ -118,7 +147,15 @@
             "permissions": [
               {
                 "permission": "patrol-standard",
-                "actions": ["save"]
+                "actions": [
+                  "save"
+                ]
+              },
+              {
+                "permission": "patrol-attachment",
+                "actions": [
+                  "save"
+                ]
               }
             ]
           }
@@ -136,15 +173,22 @@
         },
         "owner": "app",
         "url": "/park/patrol/posts",
-        "showPage": ["patrol-post"],
+        "showPage": [
+          "patrol-post"
+        ],
         "assetType": "patrolPost",
         "accessSupport": "support",
-        "assetTypes": ["patrolPost", "user"],
+        "assetTypes": [
+          "patrolPost",
+          "user"
+        ],
         "sortIndex": 4,
         "permissions": [
           {
             "permission": "patrol-post",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": [
@@ -154,7 +198,9 @@
             "permissions": [
               {
                 "permission": "patrol-post",
-                "actions": ["save"]
+                "actions": [
+                  "save"
+                ]
               }
             ]
           }
@@ -172,15 +218,21 @@
         },
         "owner": "app",
         "url": "/park/patrol/rosters",
-        "showPage": ["patrol-roster"],
+        "showPage": [
+          "patrol-roster"
+        ],
         "assetType": "patrolRoster",
         "accessSupport": "support",
-        "assetTypes": ["patrolRoster"],
+        "assetTypes": [
+          "patrolRoster"
+        ],
         "sortIndex": 5,
         "permissions": [
           {
             "permission": "patrol-roster",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": [
@@ -190,7 +242,9 @@
             "permissions": [
               {
                 "permission": "patrol-roster",
-                "actions": ["save"]
+                "actions": [
+                  "save"
+                ]
               }
             ]
           }
@@ -208,15 +262,21 @@
         },
         "owner": "app",
         "url": "/park/patrol/plans",
-        "showPage": ["patrol-plan"],
+        "showPage": [
+          "patrol-plan"
+        ],
         "assetType": "patrolPlan",
         "accessSupport": "support",
-        "assetTypes": ["patrolPlan"],
+        "assetTypes": [
+          "patrolPlan"
+        ],
         "sortIndex": 6,
         "permissions": [
           {
             "permission": "patrol-plan",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": [
@@ -226,7 +286,9 @@
             "permissions": [
               {
                 "permission": "patrol-plan",
-                "actions": ["save"]
+                "actions": [
+                  "save"
+                ]
               }
             ]
           }
@@ -244,15 +306,28 @@
         },
         "owner": "app",
         "url": "/park/patrol/tasks",
-        "showPage": ["patrol-task"],
+        "showPage": [
+          "patrol-task"
+        ],
         "assetType": "patrolPlan",
         "accessSupport": "support",
-        "assetTypes": ["patrolPlan"],
+        "assetTypes": [
+          "patrolPlan",
+          "patrolAttachment"
+        ],
         "sortIndex": 7,
         "permissions": [
           {
             "permission": "patrol-task",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-attachment",
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": [
@@ -262,7 +337,9 @@
             "permissions": [
               {
                 "permission": "patrol-task",
-                "actions": ["generate"]
+                "actions": [
+                  "generate"
+                ]
               }
             ]
           }
@@ -280,15 +357,28 @@
         },
         "owner": "app",
         "url": "/park/patrol/records",
-        "showPage": ["patrol-execution"],
+        "showPage": [
+          "patrol-execution"
+        ],
         "assetType": "patrolPlan",
         "accessSupport": "support",
-        "assetTypes": ["patrolPlan"],
+        "assetTypes": [
+          "patrolPlan",
+          "patrolAttachment"
+        ],
         "sortIndex": 8,
         "permissions": [
           {
             "permission": "patrol-execution",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
+          },
+          {
+            "permission": "patrol-attachment",
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": []
@@ -305,15 +395,21 @@
         },
         "owner": "app",
         "url": "/park/patrol/reports",
-        "showPage": ["patrol-report"],
+        "showPage": [
+          "patrol-report"
+        ],
         "assetType": "patrolPlan",
         "accessSupport": "support",
-        "assetTypes": ["patrolPlan"],
+        "assetTypes": [
+          "patrolPlan"
+        ],
         "sortIndex": 9,
         "permissions": [
           {
             "permission": "patrol-report",
-            "actions": ["query"]
+            "actions": [
+              "query"
+            ]
           }
         ],
         "buttons": []

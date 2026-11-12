@@ -8,11 +8,14 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "allowJs": true,
+    "allowImportingTsExtensions": true,
     "jsx": "preserve",
     "lib": ["ES2022", "DOM"],
     "types": ["vite/client"],
     "baseUrl": ".",
     "paths": {
+      "vue": ["../../node_modules/vue"],
+      "vue/*": ["../../node_modules/vue/*"],
       "@jetlinks-web-core/*": ["../../jetlinks-web-core/src/*"],
       "@/*": ["../../jetlinks-web-core/src/*"]
     }
