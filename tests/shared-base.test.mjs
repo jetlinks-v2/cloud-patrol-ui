@@ -50,6 +50,8 @@ test('公共模块唯一提供基础菜单和路由，业务不再注册基础�
   assert.equal(basics[0].children.length, 5)
   assert.equal(basics[0].options?.appName, undefined)
   const routes = shared.default.getAsyncRoutesMap(), businessRoutes = business.default.getAsyncRoutesMap()
+  assert.equal(typeof businessRoutes['patrol/records'], 'function')
+  assert.equal(businessRoutes['patrol/execution-records'], businessRoutes['patrol/records'])
   for (const menu of basics[0].children) {
     assert.equal(typeof routes[menu.code], 'function')
     assert.equal(businessRoutes[menu.code], undefined)
@@ -72,6 +74,9 @@ test('公共模块唯一提供基础菜单和路由，业务不再注册基础�
   }
   const navigation = business.default.getMenuFilters()[0].filter([patrolRoot], {applicationScope: 'test-app'})
   assert.equal(navigation.at(-1).code, 'charging/basic')
+  const patrolRecords = navigation.find(item => item.code === 'patrol/record-management')
+    ?.children?.find(item => item.code === 'patrol/records')
+  assert.equal(patrolRecords?.options?.meta?.componentCode, 'patrol/execution-records')
   for (const page of navigation.at(-1).children) assert.equal(typeof routes[page.code], 'function')
   modules.registerModule()
   const name = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')).name

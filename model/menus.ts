@@ -3,6 +3,15 @@ import { isProjectApplicationScope } from '@jetlinks-web-core/utils/application-
 
 const isPatrolRoot = (menu: MenuItem) => menu.code === 'cloud-patrol'
 const isSystemMenu = (menu: MenuItem) => menu.code === 'patrol/system' || menu.code === 'charging/basic'
+const PATROL_RECORDS_COMPONENT = 'patrol/execution-records'
+
+const useUniquePatrolComponents = (menu: MenuItem): MenuItem => {
+  const children = menu.children?.map(useUniquePatrolComponents)
+  const result = menu.code === 'patrol/records'
+    ? { ...menu, options: { ...menu.options, meta: { ...menu.options?.meta, componentCode: PATROL_RECORDS_COMPONENT } } }
+    : menu
+  return children ? { ...result, children } : result
+}
 
 // 已初始化环境可能仍下发旧预警菜单，统一移除入口，不依赖重新授权或修改 SaaS。
 const removeWarningMenu = (menus: MenuItem[]): MenuItem[] => menus
@@ -39,7 +48,9 @@ export const patrolMenuFilter: MenuFilterDefinition = {
     if (!menus.some(menu => isPatrolRoot(menu) || menu.code.startsWith('patrol/'))) return menus
 
     // 项目授权树保留完整分组；独立应用提升一层，让左侧分组与右侧页签保持原布局。
-    const expanded = menus.flatMap(menu => isPatrolRoot(menu) ? menu.children || [] : [menu])
+    const expanded = menus
+      .flatMap(menu => isPatrolRoot(menu) ? menu.children || [] : [menu])
+      .map(useUniquePatrolComponents)
     const systems = expanded.filter(isSystemMenu).map(menu => ({
       ...resolveSystemRoutes(menu),
       name: '系统管理',
