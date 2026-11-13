@@ -1,10 +1,10 @@
 <template>
 
-  <div class="point-workspace">
-    <aside>
+  <FullPage class="point-workspace">
+    <aside class="point-categories">
       <CategoryTree :nodes="tree" :selected-id="categoryId" :loading="loading" :failed="failed" @select="categoryId = $event" />
     </aside>
-    <section>
+    <section class="point-list">
   <a-alert v-if="exportFailed" type="error" :message="t('Patrol.exportFailed')" style="margin-bottom:12px" />
   <a-alert v-if="batchQr.failed" type="error" :message="t('Patrol.exportFailed')" style="margin-bottom:12px" />
   <a-alert v-if="batchQr.tooMany" type="warning" :message="t('Patrol.pointQr.limit')" style="margin-bottom:12px" />
@@ -25,12 +25,12 @@
     </template>
   </ConfigurationPage>
     </section>
-  </div>
+  </FullPage>
   <PointAssignmentEditor v-if="assignment" :points="assignment.points" :category-id="categoryId" @close="assignment = undefined" @saved="assignmentSaved" />
   <PointCategoryEditor v-if="categoryChange" :points="categoryChange.points" :action="categoryChange.action" :category-id="categoryId" @close="categoryChange = undefined" @saved="categoryChange = undefined; pointTable?.refresh()" />
   <RosterImport v-if="importOpen" @close="importOpen = false" />
   <PointImport v-if="pointImportOpen" @close="pointImportOpen = false" @saved="pointImportOpen = false; pointTable?.refresh()" />
-  <PointQr v-if="qr.visible" :state="qr" @close="qr.close" @download="qr.download" @print="qr.print" @download-all="qr.downloadAll" />
+  <PointQr v-if="qr.visible" :state="qr" @close="qr.close" @download="qr.download" @print="qr.print" />
   <div ref="batchCards" class="batch-qr-renderer" aria-hidden="true">
     <div v-for="point in batchQr.rows" :key="point.id" class="qr-card">
       <a-qrcode :value="pointQrValue(point)" type="svg" :size="200" :bordered="false" include-margin />
@@ -84,9 +84,12 @@ function assignmentSaved() { pointTable.value?.refresh() }
 </script>
 
 <style scoped>
-.point-workspace { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 20px; height: 100%; }
-aside { overflow: auto; border-right: 1px solid var(--ant-color-border-secondary, #f0f0f0); padding-right: 16px; }
-section { min-width: 0; min-height: 0; }
+.point-workspace { display:grid; grid-template-columns:250px minmax(0,1fr); grid-template-rows:minmax(0,1fr); gap:20px; min-height:0; overflow:hidden; }
+.point-categories { min-height:0; min-width:0; overflow:hidden; border-right:1px solid var(--ant-color-border-secondary,#f0f0f0); padding-right:16px; }
+.point-categories :deep(.category-tree) { height:100%; }
+.point-categories :deep(.category-tree > .ant-spin-nested-loading) { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.point-list { display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; }
+.point-list > .ant-alert { flex-shrink:0; }
 .batch-qr-renderer { position: fixed; left: -10000px; top: 0; visibility: hidden; pointer-events: none; }
-@media (max-width: 760px) { .point-workspace { grid-template-columns: 1fr; } }
+@media (max-width:760px) { .point-workspace { grid-template-columns:1fr; grid-template-rows:minmax(120px,28%) minmax(0,1fr); gap:12px; } .point-categories { border-right:0; border-bottom:1px solid var(--ant-color-border-secondary,#f0f0f0); padding:0 0 12px; } }
 </style>

@@ -7,7 +7,8 @@ const prefix = '/park/patrol'
 const projectOptions = (projectId?: string) => projectId ? { headers: { 'X-Patrol-Project': projectId } } : undefined
 // 保留宿主响应用于 ProTable；普通动作只解包 result，不再重复触发全局错误提示。
 export const queryConfig = (resource: Resource, query: Query, projectId?: string) =>
-  request.post<Page<ConfigEntity>>(`${prefix}/${resource}/_query`, query, resource === 'roles' ? undefined : projectOptions(projectId))
+  // 候选与名称回显只读取角色，不因不需要的成员查询而依赖 user 数据权限。
+  request.post<Page<ConfigEntity>>(`${prefix}/${resource}/_query${resource === 'roles' ? '?includeMembers=false' : ''}`, query, resource === 'roles' ? undefined : projectOptions(projectId))
 export const saveConfig = (resource: Resource, value: ConfigEntity) =>
   value.id
     ? request.put<ConfigEntity>(`${prefix}/${resource}/${encodeURIComponent(value.id)}`, value, projectOptions(value.projectId))

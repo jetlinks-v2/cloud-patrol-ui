@@ -15,6 +15,7 @@
       row-key="id"
       :alert-show="false"
       :scroll="{ x: resource === 'points' ? 1990 : 1100 }"
+      :body-style="{ flex: '1 1 0', height: '0', minHeight: 0 }"
       :default-params="{
         sorts: [
           { name: 'createTime', order: 'desc' },
@@ -185,7 +186,7 @@ const columns = computed(() => [
     key: 'actions',
     dataIndex: 'actions',
     scopedSlots: true,
-    width: props.resource === 'points' ? 510 : props.resource === 'levels' ? 340 : canDeleteConfiguration(props.resource) ? 240 : 180,
+    width: props.resource === 'points' ? 340 : props.resource === 'levels' ? 340 : canDeleteConfiguration(props.resource) ? 240 : 180,
     fixed: 'right',
   },
 ])
@@ -195,12 +196,15 @@ function filterChanged({ filter }: ConditionFilterChangePayload) {
 </script>
 <style scoped>
 .patrol-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
-.patrol-row-actions { display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+.patrol-row-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.patrol-row-actions :deep(.ant-btn-link) { padding-inline:4px; }
 .patrol-page {
   display: flex;
   flex-direction: column;
   gap: var(--space-3, 16px);
   height: 100%;
   min-height: 0;
+  flex: 1;
+  overflow: hidden;
 }
 </style>

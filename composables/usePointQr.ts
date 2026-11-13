@@ -1,9 +1,11 @@
 import { ref, shallowRef, onScopeDispose } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { queryConfig } from '../api/patrol'
 import type { ConfigEntity, Query } from '../api/types'
 import { pointQrFilename } from '../model/point-qr'
 /** 二维码预览和当前条件批量打印；沿用标准点位查询权限，超限不静默截断。 */
 export function usePointQr() {
+  const { t } = useI18n()
   const printing = ref(false), downloading = ref(false), visible = ref(false), loading = ref(false), failed = ref(false), tooMany = ref(false)
   const rows = shallowRef<ConfigEntity[]>([])
   let version = 0, printFrame: HTMLIFrameElement | undefined
@@ -37,15 +39,24 @@ export function usePointQr() {
       const context = canvas.getContext('2d'); if (!context) throw new Error('canvas unavailable')
       context.scale(2, 2)
       context.fillStyle = '#fff'; context.fillRect(0, 0, 600, 760); context.drawImage(image, 50, 20, 500, 500)
-      context.fillStyle = '#000'; context.textAlign = 'center'; context.font = '24px sans-serif'
-      // 两行点位名和一行编码；避免长名称越出图片边缘。
-      const chars = [...point.name]; const lines: string[] = []; let line = ''
-      for (const char of chars) {
-        if (context.measureText(line + char).width > 540) { lines.push(line); line = char } else line += char
+      // 下载和打印与弹窗使用相同的项目、点位信息；长名称换行，不挤压二维码留白。
+      context.textAlign = 'left'; context.font = '22px sans-serif'
+      const labelWidth = Math.max(context.measureText(t('Patrol.projects.label')).width, context.measureText(t('Patrol.point')).width)
+      const valueX = 40 + labelWidth + 20, valueWidth = 560 - valueX
+      for (const [index, [label, value]] of [
+        [t('Patrol.projects.label'), point.projectName || '—'],
+        [t('Patrol.point'), point.name],
+      ].entries()) {
+        const y = 570 + index * 90
+        context.fillStyle = '#666'; context.fillText(label, 40, y)
+        context.fillStyle = '#1f2329'
+        const lines: string[] = []; let line = ''
+        for (const char of value) {
+          if (context.measureText(line + char).width > valueWidth) { lines.push(line); line = char } else line += char
+        }
+        if (line) lines.push(line)
+        lines.slice(0, 2).forEach((text, lineIndex) => context.fillText(text + (lineIndex === 1 && lines.length > 2 ? '…' : ''), valueX, y + lineIndex * 32, valueWidth))
       }
-      if (line) lines.push(line)
-      lines.slice(0, 2).forEach((value, index) => context.fillText(value + (index === 1 && lines.length > 2 ? '…' : ''), 300, 570 + index * 36, 540))
-      context.fillText(point.code || '', 300, 680, 540)
       return await new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('QR image failed')), 'image/png'))
     } finally { URL.revokeObjectURL(url) }
   }
@@ -55,8 +66,14 @@ export function usePointQr() {
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
   async function download(point: ConfigEntity, card: HTMLElement | undefined) {
-    failed.value = false
-    try { saveBlob(await render(point, card), pointQrFilename(point)) } catch { failed.value = true }
+    if (downloading.value) return
+    const current = version
+    downloading.value = true; failed.value = false
+    try {
+      const blob = await render(point, card)
+      if (current === version) saveBlob(blob, pointQrFilename(point))
+    } catch { if (current === version) failed.value = true }
+    finally { downloading.value = false }
   }
   /** 一次ZIP下载避免浏览器拦截多文件；加入点位ID避免同名文件覆盖。 */
   async function downloadAll(cards: HTMLElement | undefined) {

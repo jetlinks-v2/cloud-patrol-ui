@@ -3,6 +3,8 @@
     "mobileEntry": "Mobile patrol (H5)",
     "mobileEntryRequiresApplication": "Enter the patrol application before opening mobile patrol",
     "pointQr": {
+      "printSingle": "Print",
+      "failed": "Unable to process the QR code. Please try again.",
       "title": "QR code",
       "batch": "Batch QR codes",
       "hint": "Download a point image, download all QR codes as ZIP, or print to PDF. QR codes only identify points; sign-in and task permissions are still required.",

@@ -3,11 +3,13 @@
     "mobileEntry": "手机巡更（H5）",
     "mobileEntryRequiresApplication": "请先进入巡更应用，再打开手机巡更",
     "pointQr": {
-      "title": "二维码",
+      "printSingle": "打印",
+      "failed": "二维码处理失败，请重试",
+      "title": "点位二维码",
       "batch": "批量二维码",
       "hint": "可下载单个点位图片、打包下载全部二维码，或打印另存为PDF。二维码仅识别点位，巡更仍需登录和任务权限。",
       "limit": "当前筛选超过500个点位，请缩小范围后再打印",
-      "download": "下载PNG",
+      "download": "下载图片",
       "print": "打印二维码 / 另存PDF",
       "downloadAll": "下载全部二维码（ZIP）"
     },
